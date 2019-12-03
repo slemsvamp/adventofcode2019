@@ -12,10 +12,10 @@ namespace day03
 
             Console.WriteLine("---- Part 01 ----");
             var part1 = new Part01().Run(parsedInput);
-            Console.WriteLine($"Result: {part1}");
+            Console.WriteLine($"Result: {part1.Distance.ToString()}");
 
             Console.WriteLine("---- Part 02 ----");
-            var part2 = new Part02().Run(parsedInput);
+            var part2 = new Part02().Run(parsedInput, part1.Crossings);
             Console.WriteLine($"Result: {part2}");
 
             Console.WriteLine("-----------------");
@@ -27,7 +27,7 @@ namespace day03
 
             if (key.Key == ConsoleKey.D1)
             {
-                WindowsClipboard.SetText(part1);
+                WindowsClipboard.SetText(part1.Distance.ToString());
             }
             else if (key.Key == ConsoleKey.D2)
             {

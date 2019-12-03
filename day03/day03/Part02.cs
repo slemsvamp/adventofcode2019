@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Text;
 
 namespace day03
 {
     public class Part02
     {
-        public string Run(List<Wire> wires)
+        public string Run(List<Wire> wires, List<Point> crossings)
         {
             List<Line> lines = new List<Line>();
 
@@ -15,174 +14,105 @@ namespace day03
             Point topLeft = new Point(1_000_000, 1_000_000);
             Point bottomRight = new Point(1_000_000, 1_000_000);
 
+            int smallestWireLength = int.MaxValue;
+
+            foreach (var crossing in crossings)
+            {
+                if (crossing.X == centralPoint.X && crossing.Y == centralPoint.Y)
+                {
+                    continue;
+                }
+
+                var wiresTotalLength = CalculateWiresForCrossing(centralPoint, crossing, wires);
+
+                if (smallestWireLength > wiresTotalLength)
+                {
+                    smallestWireLength = wiresTotalLength;
+                }
+            }
+
+            return smallestWireLength.ToString();
+        }
+
+        private int CalculateWiresForCrossing(Point centralPoint, Point crossing, List<Wire> wires)
+        {
+            int wireTotal = 0;
+
             foreach (var wire in wires)
             {
+                int wireLength = 0;
+
                 Point wirePoint = centralPoint;
-                int lineIndex = 1;
 
                 foreach (var order in wire.Orders)
                 {
                     Point start = wirePoint;
                     Point end = wirePoint;
-                    var direction = Directionality.Horizontal;
 
                     switch (order.Letter)
                     {
                         case "U":
                         {
                             wirePoint.Y -= order.Number;
-                            direction = Directionality.Vertical;
-                            start = wirePoint;
                         }
                         break;
                         case "D":
                         {
                             wirePoint.Y += order.Number;
-                            direction = Directionality.Vertical;
-                            end = wirePoint;
                         }
                         break;
                         case "L":
                         {
                             wirePoint.X -= order.Number;
-                            start = wirePoint;
                         }
                         break;
                         case "R":
                         {
                             wirePoint.X += order.Number;
-                            end = wirePoint;
                         }
                         break;
                     }
 
-                    if (wirePoint.Y < topLeft.Y)
-                    {
-                        topLeft.Y = wirePoint.Y;
-                    }
-                    if (wirePoint.X < topLeft.X)
-                    {
-                        topLeft.X = wirePoint.X;
-                    }
-                    if (wirePoint.Y > bottomRight.Y)
-                    {
-                        bottomRight.Y = wirePoint.Y;
-                    }
-                    if (wirePoint.X > bottomRight.X)
-                    {
-                        bottomRight.X = wirePoint.X;
-                    }
+                    end = wirePoint;
 
-                    lines.Add(new Line
+                    var line = new Line
                     {
-                        LineIndex = lineIndex++,
                         Start = start,
                         End = end,
-                        Direction = direction,
                         WireIndex = wire.Index
-                    });
-                }
-            }
+                    };
 
-            Size canvasSize = new Size
-            {
-                Height = bottomRight.Y - topLeft.Y + 1,
-                Width = bottomRight.X - topLeft.X + 1
-            };
-
-            var crossings = new List<Point>();
-
-            int smallestLineIndex = int.MaxValue;
-
-            for (int lineIndex = 0; lineIndex < lines.Count - 1; lineIndex++)
-            {
-                var line = lines[lineIndex];
-
-                for (var otherLineIndex = lineIndex + 1; otherLineIndex < lines.Count; otherLineIndex++)
-                {
-                    var otherLine = lines[otherLineIndex];
-
-                    if (line.WireIndex == otherLine.WireIndex)
+                    if (LineIntersectsWithCrossing(order.Letter, line, crossing))
                     {
-                        continue;
-                    }
-
-                    if (line.Direction == otherLine.Direction)
-                    {
-                        continue;
-                    }
-
-                    if (line.Direction == Directionality.Horizontal)
-                    {
-                        if (line.Start.Y >= otherLine.Start.Y && line.Start.Y <= otherLine.End.Y &&
-                            otherLine.Start.X >= line.Start.X && otherLine.Start.X <= line.End.X)
-                        {
-                            crossings.Add(new Point
-                            {
-                                X = otherLine.End.X,
-                                Y = line.Start.Y
-                            });
-
-                            if (line.LineIndex < smallestLineIndex)
-                            {
-                                smallestLineIndex = line.LineIndex;
-                            }
-                            if (otherLine.LineIndex < smallestLineIndex)
-                            {
-                                smallestLineIndex = otherLine.LineIndex;
-                            }
-                        }
+                        wireLength += Math.Abs(crossing.X - line.Start.X) + Math.Abs(crossing.Y - line.Start.Y);
+                        break;
                     }
                     else
                     {
-                        if (otherLine.Start.Y >= line.Start.Y && otherLine.Start.Y <= line.End.Y &&
-                            line.Start.X >= otherLine.Start.X && line.Start.X <= otherLine.End.X)
-                        {
-                            crossings.Add(new Point
-                            {
-                                X = line.End.X,
-                                Y = otherLine.Start.Y
-                            });
-
-                            if (line.LineIndex < smallestLineIndex)
-                            {
-                                smallestLineIndex = line.LineIndex;
-                            }
-                            if (otherLine.LineIndex < smallestLineIndex)
-                            {
-                                smallestLineIndex = otherLine.LineIndex;
-                            }
-                        }
+                        wireLength += order.Number;
                     }
                 }
+
+                wireTotal += wireLength;
             }
 
-            Point closestToCenter = Point.Empty;
-            int distance = int.MaxValue;
+            return wireTotal;
+        }
 
-            Point center = new Point
+        private bool LineIntersectsWithCrossing(string direction, Line lineIn, Point crossing)
+        {
+            var line = new Line
             {
-                X = topLeft.X + (canvasSize.Width / 2),
-                Y = topLeft.Y + (canvasSize.Height / 2)
+                Start = direction == "U" || direction == "L" ? lineIn.End : lineIn.Start,
+                End = direction == "U" || direction == "L" ? lineIn.Start : lineIn.End
             };
 
-            foreach (var crossing in crossings)
+            if (crossing.X >= line.Start.X && crossing.X <= line.End.X &&
+                crossing.Y >= line.Start.Y && crossing.Y <= line.End.Y)
             {
-                var distanceToStart = Math.Abs(crossing.X - 1_000_000) + Math.Abs(crossing.Y - 1_000_000);
-                if (distanceToStart == 0)
-                {
-                    continue;
-                }
-
-                var manhattanDistance = Math.Abs(crossing.X - 1_000_000) + Math.Abs(crossing.Y - 1_000_000);
-                if (manhattanDistance < distance)
-                {
-                    distance = manhattanDistance;
-                    closestToCenter = crossing;
-                }
+                return true;
             }
-
-            return smallestLineIndex.ToString();
+            return false;
         }
     }
 }

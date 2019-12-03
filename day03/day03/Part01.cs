@@ -7,7 +7,7 @@ namespace day03
 {
     public class Part01
     {
-        public string Run(List<Wire> wires)
+        public Part01Model Run(List<Wire> wires)
         {
             List<Line> lines = new List<Line>();
 
@@ -158,7 +158,11 @@ namespace day03
                 }
             }
 
-            return (Math.Abs(closestToCenter.X - 1_000_000) + Math.Abs(closestToCenter.Y - 1_000_000)).ToString();
+            return new Part01Model
+            {
+                Crossings = crossings,
+                Distance = (Math.Abs(closestToCenter.X - 1_000_000) + Math.Abs(closestToCenter.Y - 1_000_000))
+            };
         }
     }
 }
