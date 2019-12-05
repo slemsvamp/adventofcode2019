@@ -101,9 +101,12 @@ namespace day04
                 }
             }
 
-            if (biggest == -1 || (groupedIntegers[biggest] % 2) == 0)
-            {
-                return false;
+			if (groupedIntegers.Count > 0)
+			{
+				if (groupedIntegers.Values.Contains(2))
+				{
+					return false;
+				}
             }
 
             return true;
