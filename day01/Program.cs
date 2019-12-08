@@ -8,10 +8,10 @@ namespace day01
         {
             var numbers = InputParser.Parse("input.txt");
 
-            var part1 = new Part01().Run(numbers);
+            var part1 = FirstStar.Run(numbers);
             Console.WriteLine($"Part 01 - Result: {part1}");
 
-            var part2 = new Part02().Run(numbers);
+            var part2 = SecondStar.Run(numbers);
             Console.WriteLine($"Part 02 - Result: {part2}");
 
             Console.WriteLine("-----------------");

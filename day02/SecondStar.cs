@@ -4,9 +4,9 @@ using System.Text;
 
 namespace day02
 {
-    public class Part02
+    public class SecondStar
     {
-        public string Run(List<int> opcodes, int expectedOutput = 19690720)
+        public static string Run(List<int> opcodes, int expectedOutput = 19690720)
         {
             for (int noun = 0; noun < 100; noun++)
             {

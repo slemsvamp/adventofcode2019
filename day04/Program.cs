@@ -6,12 +6,14 @@ namespace day04
     {
         static void Main(string[] args)
         {
+            string input = "264793-803935";
+
             Console.WriteLine("---- Part 01 ----");
-            var part1 = "not run"; //new Part01().Run("264793-803935");
+            var part1 = FirstStar.Run(input);
             Console.WriteLine($"Result: {part1}");
 
             Console.WriteLine("---- Part 02 ----");
-            var part2 = new Part02().Run("264793-803935");
+            var part2 = SecondStar.Run(input);
             Console.WriteLine($"Result: {part2}");
 
             Console.WriteLine("-----------------");

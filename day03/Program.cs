@@ -6,16 +6,14 @@ namespace day03
     {
         static void Main(string[] args)
         {
-            // 359 too high
-
             var parsedInput = InputParser.Parse("input.txt");
 
             Console.WriteLine("---- Part 01 ----");
-            var part1 = new Part01().Run(parsedInput);
+            var part1 = new FirstStar().Run(parsedInput);
             Console.WriteLine($"Result: {part1.Distance.ToString()}");
 
             Console.WriteLine("---- Part 02 ----");
-            var part2 = new Part02().Run(parsedInput, part1.Crossings);
+            var part2 = new SecondStar().Run(parsedInput, part1.Crossings);
             Console.WriteLine($"Result: {part2}");
 
             Console.WriteLine("-----------------");

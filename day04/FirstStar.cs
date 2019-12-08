@@ -4,9 +4,9 @@ using System.Text;
 
 namespace day04
 {
-    public class Part01
+    public class FirstStar
     {
-        public string Run(string input)
+        public static string Run(string input)
         {
             // 1661 not right
             // 278 not right

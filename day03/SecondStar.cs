@@ -4,7 +4,7 @@ using System.Drawing;
 
 namespace day03
 {
-    public class Part02
+    public class SecondStar
     {
         public string Run(List<Wire> wires, List<Point> crossings)
         {

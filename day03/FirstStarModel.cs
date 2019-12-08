@@ -5,7 +5,7 @@ using System.Text;
 
 namespace day03
 {
-    public class Part01Model
+    public class FirstStarModel
     {
         public List<Point> Crossings;
         public int Distance;

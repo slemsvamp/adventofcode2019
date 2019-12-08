@@ -4,74 +4,67 @@ using System.Linq;
 
 namespace day04
 {
-    public class Part02
+    public class SecondStar
     {
-        public string Run(string input)
+        public static string Run(string input)
         {
-            // 760 is not right
-            // 497 is not right
-            // 639 is not right
+            var inputValues = input.Split(new string[] { "-" }, StringSplitOptions.None);
 
-            var z = Grouped("133345");
-
-            var split = input.Split(new string[] { "-" }, StringSplitOptions.None);
-            var min = int.Parse(split[0]);
-            var max = int.Parse(split[1]);
+            var min = int.Parse(inputValues[0]);
+            var max = int.Parse(inputValues[1]);
 
             int skipped = 0;
             int valid = 0;
 
-            for (int n = min; n <= max; n++)
+            for (int number = min; number <= max; number++)
             {
-                string s = n.ToString();
+                string numberString = number.ToString();
+                bool decreasing = false;
+                int duplicate = 0;
 
-                int g = 0;
-                int d = 0;
-                int dec = 0;
-
-                for (int si = 0; si < s.Length - 1; si++)
+                for (int si = 0; si < numberString.Length - 1; si++)
                 {
-                    if (s[si] == s[si + 1])
+                    if (numberString[si] == numberString[si + 1])
                     {
-                        d++;
+                        duplicate++;
                     }
-                    if (int.Parse(s[si].ToString()) > int.Parse(s[si + 1].ToString())) dec++;
+
+                    if (int.Parse(numberString[si].ToString()) > int.Parse(numberString[si + 1].ToString()))
+                    {
+                        decreasing = true;
+                        break;
+                    }
                 }
 
-                if (d > 0)
-                {
-
-                }
-
-                if (d == 0 || dec > 0 || g > 0)
+                if (duplicate == 0 || decreasing)
                 {
                     skipped++;
                     continue;
                 }
-                else
-                {
-                    if (Grouped("z" + s + "z"))
-                    {
-                        skipped++;
-                        continue;
-                    }
 
-                    valid++;
+                if (Grouped(numberString))
+                {
+                    skipped++;
+                    continue;
                 }
+
+                valid++;
             }
 
             return (valid).ToString();
         }
 
-        private static bool Grouped(string s)
+        private static bool Grouped(string numberString)
         {
+            var paddedNumberString = $"z{numberString}z";
             var groupedIntegers = new Dictionary<int, int>();
-            for (int x = 0; x < s.Length; x++)
+
+            for (int x = 0; x < paddedNumberString.Length; x++)
             {
                 int theSame = 1;
-                for (int playhead = 1; x + playhead < s.Length; playhead++)
+                for (int playhead = 1; x + playhead < paddedNumberString.Length; playhead++)
                 {
-                    if (s.Substring(x, 1) != s.Substring(x + playhead, 1))
+                    if (paddedNumberString.Substring(x, 1) != paddedNumberString.Substring(x + playhead, 1))
                     {
                         break;
                     }
@@ -80,7 +73,7 @@ namespace day04
 
                 if (theSame >= 2)
                 {
-                    var key = int.Parse(s.Substring(x, 1));
+                    var key = int.Parse(paddedNumberString.Substring(x, 1));
                     if (!groupedIntegers.ContainsKey(key))
                     {
                         groupedIntegers.Add(key, theSame);

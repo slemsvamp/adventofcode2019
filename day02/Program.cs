@@ -6,14 +6,14 @@ namespace day02
     {
         static void Main(string[] args)
         {
-            var parsedResult = InputParser.Parse("input.txt");
+            var opcodes = InputParser.Parse("input.txt");
 
             Console.WriteLine("---- Part 01 ----");
-            var part1 = new Part01().Run(parsedResult);
+            var part1 = FirstStar.Run(opcodes);
             Console.WriteLine($"Result: {part1}");
 
             Console.WriteLine("---- Part 02 ----");
-            var part2 = new Part02().Run(parsedResult);
+            var part2 = SecondStar.Run(opcodes);
             Console.WriteLine($"Result: {part2}");
 
             Console.WriteLine("-----------------");

@@ -5,9 +5,9 @@ using System.Text;
 
 namespace day03
 {
-    public class Part01
+    public class FirstStar
     {
-        public Part01Model Run(List<Wire> wires)
+        public FirstStarModel Run(List<Wire> wires)
         {
             List<Line> lines = new List<Line>();
 
@@ -158,7 +158,7 @@ namespace day03
                 }
             }
 
-            return new Part01Model
+            return new FirstStarModel
             {
                 Crossings = crossings,
                 Distance = (Math.Abs(closestToCenter.X - 1_000_000) + Math.Abs(closestToCenter.Y - 1_000_000))
