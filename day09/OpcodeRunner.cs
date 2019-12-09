@@ -24,6 +24,7 @@ namespace day09
         public OpcodeRunner(int memorySize, List<long> opcodes)
         {
             Halted = false;
+
             _output = 0;
             _playhead = 0;
 
@@ -42,399 +43,73 @@ namespace day09
             _input.Enqueue(input);
         }
 
+        public long ReadNext()
+        {
+            return _opcodes[_playhead++];
+        }
+
         public long Run()
         {
             while (_playhead < _opcodes.Length)
             {
-                long opcode = _opcodes[_playhead];
-                string opcodeString = opcode.ToString();
+                var intCode = ReadNext();
+                var parameterModes = ParameterModes(intCode);
+                var instruction = intCode > 9 ? long.Parse(intCode.ToString().Substring(intCode.ToString().Length - 2)) : intCode;
 
-                long modeA = 0;
-                if (opcodeString.Length == 5)
-                {
-                    modeA = long.Parse(opcodeString.Substring(opcodeString.Length - 5)) / 10000;
-                }
-
-                long modeB = 0;
-                if (opcodeString.Length >= 4)
-                {
-                    modeB = long.Parse(opcodeString.Substring(opcodeString.Length - 4)) / 1000;
-                }
-
-                long modeC = 0;
-                if (opcodeString.Length >= 3)
-                {
-                    modeC = long.Parse(opcodeString.Substring(opcodeString.Length - 3)) / 100;
-                }
-
-                if (opcodeString.Length >= 2)
-                {
-                    opcode = long.Parse(opcodeString.Substring(opcodeString.Length - 2));
-                }
-
-                switch (opcode)
+                switch (instruction)
                 {
                     case 1:
                     {
-                        var addressA = _opcodes[_playhead + 1];
-                        long valueA = 0;
-
-                        var addressB = _opcodes[_playhead + 2];
-                        long valueB = 0;
-
-                        var addressC = _opcodes[_playhead + 3];
-
-                        if (modeC == (long)ParameterMode.PositionMode)
-                        {
-                            valueA = _opcodes[(int)addressA];
-                        }
-                        else if (modeC == (long)ParameterMode.ImmediateMode)
-                        {
-                            valueA = addressA;
-                        }
-                        else if (modeC == (long)ParameterMode.RelativeMode)
-                        {
-                            valueA = _opcodes[(int)(addressA + _relativeBase)];
-                        }
-
-                        if (modeB == (long)ParameterMode.PositionMode)
-                        {
-                            valueB = _opcodes[(int)addressB];
-                        }
-                        else if (modeB == (long)ParameterMode.ImmediateMode)
-                        {
-                            valueB = addressB;
-                        }
-                        else if (modeB == (long)ParameterMode.RelativeMode)
-                        {
-                            valueB = _opcodes[(int)(addressB + _relativeBase)];
-                        }
-
-                        if (modeA == (long)ParameterMode.PositionMode)
-                        {
-                            _opcodes[(int)addressC] = valueA + valueB;
-                        }
-                        else if (modeA == (long)ParameterMode.RelativeMode)
-                        {
-                            _opcodes[(int)(addressC + _relativeBase)] = valueA + valueB;
-                        }
-
-                        _playhead += 4;
+                        var parameters = ReadNextParameters(parameterModes, "RRW", 3);
+                        Addition(parameters);
                     }
                     break;
                     case 2:
                     {
-                        var addressA = _opcodes[_playhead + 1];
-                        long valueA = 0;
-
-                        var addressB = _opcodes[_playhead + 2];
-                        long valueB = 0;
-
-                        var addressC = _opcodes[_playhead + 3];
-
-                        if (modeC == (long)ParameterMode.PositionMode)
-                        {
-                            valueA = _opcodes[(int)addressA];
-                        }
-                        else if (modeC == (long)ParameterMode.ImmediateMode)
-                        {
-                            valueA = addressA;
-                        }
-                        else if (modeC == (long)ParameterMode.RelativeMode)
-                        {
-                            valueA = _opcodes[(int)(addressA + _relativeBase)];
-                        }
-
-                        if (modeB == (long)ParameterMode.PositionMode)
-                        {
-                            valueB = _opcodes[(int)addressB];
-                        }
-                        else if (modeB == (long)ParameterMode.ImmediateMode)
-                        {
-                            valueB = addressB;
-                        }
-                        else if (modeB == (long)ParameterMode.RelativeMode)
-                        {
-                            valueB = _opcodes[(int)(addressB + _relativeBase)];
-                        }
-
-                        if (modeA == (long)ParameterMode.PositionMode)
-                        {
-                            _opcodes[(int)addressC] = valueA * valueB;
-                        }
-                        else if (modeA == (long)ParameterMode.RelativeMode)
-                        {
-                            _opcodes[(int)(addressC + _relativeBase)] = valueA * valueB;
-                        }
-
-                        _playhead += 4;
+                        var parameters = ReadNextParameters(parameterModes, "RRW", 3);
+                        Multiplication(parameters);
                     }
                     break;
                     case 3:
                     {
-                        var addressA = _opcodes[_playhead + 1];
-                        long valueA = 0;
-
-                        if (modeC == (long)ParameterMode.PositionMode)
-                        {
-                            valueA = _opcodes[(int)addressA];
-                        }
-                        else if (modeC == (long)ParameterMode.ImmediateMode)
-                        {
-                            valueA = addressA;
-                        }
-                        else if (modeC == (long)ParameterMode.RelativeMode)
-                        {
-                            valueA = addressA + _relativeBase;
-                        }
-
-                        _opcodes[(int)valueA] = _input.Dequeue();
-
-                        _playhead += 2;
+                        var parameters = ReadNextParameters(parameterModes, "W", 1);
+                        Input(parameters);
                     }
                     break;
                     case 4:
                     {
-                        var parameterA = _opcodes[_playhead + 1];
-                        long valueA = 0;
-
-                        if (modeC == (long)ParameterMode.PositionMode)
-                        {
-                            valueA = _opcodes[(int)parameterA];
-                        }
-                        else if (modeC == (long)ParameterMode.ImmediateMode)
-                        {
-                            valueA = parameterA;
-                        }
-                        else if (modeC == (long)ParameterMode.RelativeMode)
-                        {
-                            valueA = _opcodes[(int)(parameterA + _relativeBase)];
-                        }
-
-                        _output = valueA;
-                        _playhead += 2;
-
-                        return _output;
+                        var parameters = ReadNextParameters(parameterModes, "R", 1);
+                        Output(parameters);
                     }
-                    case 5: // jump-if-true
+                    return _output;
+                    case 5:
                     {
-                        var addressA = _opcodes[_playhead + 1];
-                        long valueA = 0;
-
-                        var addressB = _opcodes[_playhead + 2];
-                        long valueB = 0;
-
-                        if (modeC == (long)ParameterMode.PositionMode)
-                        {
-                            valueA = _opcodes[(int)addressA];
-                        }
-                        else if (modeC == (long)ParameterMode.ImmediateMode)
-                        {
-                            valueA = addressA;
-                        }
-                        else if (modeC == (long)ParameterMode.RelativeMode)
-                        {
-                            valueA = _opcodes[(int)(addressA + _relativeBase)];
-                        }
-
-                        if (modeB == (long)ParameterMode.PositionMode)
-                        {
-                            valueB = _opcodes[(int)addressB];
-                        }
-                        else if (modeB == (long)ParameterMode.ImmediateMode)
-                        {
-                            valueB = addressB;
-                        }
-                        else if (modeB == (long)ParameterMode.RelativeMode)
-                        {
-                            valueB = _opcodes[(int)(addressB + _relativeBase)];
-                        }
-
-                        if (valueA != 0)
-                        {
-                            _playhead = (int)valueB;
-                        }
-                        else
-                        {
-                            _playhead += 3;
-                        }
+                        var parameters = ReadNextParameters(parameterModes, "RR", 2);
+                        JumpIfTrue(parameters);
                     }
                     break;
-                    case 6: // jump-if-false
+                    case 6:
                     {
-                        var addressA = _opcodes[_playhead + 1];
-                        long valueA = 0;
-
-                        var addressB = _opcodes[_playhead + 2];
-                        long valueB = 0;
-
-                        if (modeC == (long)ParameterMode.PositionMode)
-                        {
-                            valueA = _opcodes[(int)addressA];
-                        }
-                        else if (modeC == (long)ParameterMode.ImmediateMode)
-                        {
-                            valueA = addressA;
-                        }
-                        else if (modeC == (long)ParameterMode.RelativeMode)
-                        {
-                            valueA = _opcodes[(int)(addressA + _relativeBase)];
-                        }
-
-                        if (modeB == (long)ParameterMode.PositionMode)
-                        {
-                            valueB = _opcodes[(int)addressB];
-                        }
-                        else if (modeB == (long)ParameterMode.ImmediateMode)
-                        {
-                            valueB = addressB;
-                        }
-                        else if (modeB == (long)ParameterMode.RelativeMode)
-                        {
-                            valueB = _opcodes[(int)(addressB + _relativeBase)];
-                        }
-
-                        if (valueA == 0)
-                        {
-                            _playhead = (int)valueB;
-                        }
-                        else
-                        {
-                            _playhead += 3;
-                        }
+                        var parameters = ReadNextParameters(parameterModes, "RR", 2);
+                        JumpIfFalse(parameters);
                     }
                     break;
-                    case 7: // less-than
+                    case 7:
                     {
-                        var addressA = _opcodes[_playhead + 1];
-                        long valueA = 0;
-
-                        var addressB = _opcodes[_playhead + 2];
-                        long valueB = 0;
-
-                        var addressC = _opcodes[_playhead + 3];
-                        long valueC = 0;
-
-                        if (modeC == (long)ParameterMode.PositionMode)
-                        {
-                            valueA = _opcodes[(int)addressA];
-                        }
-                        else if (modeC == (long)ParameterMode.ImmediateMode)
-                        {
-                            valueA = addressA;
-                        }
-                        else if (modeC == (long)ParameterMode.RelativeMode)
-                        {
-                            valueA = _opcodes[(int)(addressA + _relativeBase)];
-                        }
-
-                        if (modeB == (long)ParameterMode.PositionMode)
-                        {
-                            valueB = _opcodes[(int)addressB];
-                        }
-                        else if (modeB == (long)ParameterMode.ImmediateMode)
-                        {
-                            valueB = addressB;
-                        }
-                        else if (modeB == (long)ParameterMode.RelativeMode)
-                        {
-                            valueB = _opcodes[(int)(addressB + _relativeBase)];
-                        }
-
-                        if (modeA == (long)ParameterMode.PositionMode)
-                        {
-                            valueC = addressC;
-                        }
-                        else if (modeA == (long)ParameterMode.ImmediateMode)
-                        {
-                            valueC = addressC;
-                        }
-                        else if (modeA == (long)ParameterMode.RelativeMode)
-                        {
-                            valueC = addressC + _relativeBase;
-                        }
-
-                        _opcodes[(int)valueC] = valueA < valueB ? 1 : 0;
-
-                        _playhead += 4;
+                        var parameters = ReadNextParameters(parameterModes, "RRW", 3);
+                        LessThan(parameters);
                     }
                     break;
-                    case 8: // equals
+                    case 8:
                     {
-                        var addressA = _opcodes[_playhead + 1];
-                        long valueA = 0;
-
-                        var addressB = _opcodes[_playhead + 2];
-                        long valueB = 0;
-
-                        var addressC = _opcodes[_playhead + 3];
-                        long valueC = 0;
-
-                        if (modeC == (long)ParameterMode.PositionMode)
-                        {
-                            valueA = _opcodes[(int)addressA];
-                        }
-                        else if (modeC == (long)ParameterMode.ImmediateMode)
-                        {
-                            valueA = addressA;
-                        }
-                        else if (modeC == (long)ParameterMode.RelativeMode)
-                        {
-                            valueA = _opcodes[(int)(addressA + _relativeBase)];
-                        }
-
-                        if (modeB == (long)ParameterMode.PositionMode)
-                        {
-                            valueB = _opcodes[(int)addressB];
-                        }
-                        else if (modeB == (long)ParameterMode.ImmediateMode)
-                        {
-                            valueB = addressB;
-                        }
-                        else if (modeB == (long)ParameterMode.RelativeMode)
-                        {
-                            valueB = _opcodes[(int)(addressB + _relativeBase)];
-                        }
-
-                        if (modeA == (long)ParameterMode.PositionMode)
-                        {
-                            valueC = addressC;
-                        }
-                        else if (modeA == (long)ParameterMode.ImmediateMode)
-                        {
-                            valueC = addressC;
-                        }
-                        else if (modeA == (long)ParameterMode.RelativeMode)
-                        {
-                            valueC = addressC + _relativeBase;
-                        }
-
-                        _opcodes[(int)valueC] = valueA == valueB ? 1 : 0;
-
-                        _playhead += 4;
+                        var parameters = ReadNextParameters(parameterModes, "RRW", 3);
+                        Equal(parameters);
                     }
                     break;
                     case 9:
                     {
-                        var addressA = _opcodes[_playhead + 1];
-                        long valueA = 0;
-
-                        if (modeC == (long)ParameterMode.PositionMode)
-                        {
-                             valueA = _opcodes[(int)addressA];
-                        }
-                        else if (modeC == (long)ParameterMode.ImmediateMode)
-                        {
-                            valueA = addressA;
-                        }
-                        else if (modeC == (long)ParameterMode.RelativeMode)
-                        {
-                            valueA = _opcodes[(int)(addressA + _relativeBase)];
-                        }
-
-                        _relativeBase += valueA;
-
-                        _playhead += 2;
+                        var parameters = ReadNextParameters(parameterModes, "R", 1);
+                        SetRelativeBase(parameters);
                     }
                     break;
                     case 99:
@@ -443,16 +118,142 @@ namespace day09
                         return _output;
                     }
                     default:
-                    throw new Exception($"Opcode error: {opcode}");
+                    throw new Exception($"Opcode error: {intCode}");
                 }
             }
 
             throw new System.Exception("Program finished unexpectedly.");
         }
 
-        //internal void SetOpcodes(List<long> opcodes)
-        //{
-        //    _opcodes = opcodes;
-        //}
+        private long[] ReadNextParameters(ParameterMode[] modes, string io, int parameterCount)
+        {
+            var values = new long[parameterCount];
+
+            for (int parameterIndex = 0; parameterIndex < parameterCount; parameterIndex++)
+            {
+                long intCode = ReadNext();
+
+                if (io[parameterIndex] == 'R')
+                {
+                    switch (modes[parameterIndex])
+                    {
+                        case ParameterMode.PositionMode:
+                        {
+                            values[parameterIndex] = _opcodes[intCode];
+                        }
+                        break;
+                        case ParameterMode.ImmediateMode:
+                        {
+                            values[parameterIndex] = intCode;
+                        }
+                        break;
+                        case ParameterMode.RelativeMode:
+                        {
+                            values[parameterIndex] = _opcodes[intCode + _relativeBase];
+                        }
+                        break;
+                        default:
+                        throw new Exception("Unknown ParameterMode.");
+                    }
+                }
+                else if (io[parameterIndex] == 'W')
+                {
+                    switch (modes[parameterIndex])
+                    {
+                        case ParameterMode.PositionMode:
+                        {
+                            values[parameterIndex] = intCode;
+                        }
+                        break;
+                        case ParameterMode.ImmediateMode:
+                        {
+                            throw new Exception("\"Parameters that an instruction writes to will never be in immediate mode.\"");
+                        }
+                        case ParameterMode.RelativeMode:
+                        {
+                            values[parameterIndex] = intCode + _relativeBase;
+                        }
+                        break;
+                        default:
+                        throw new Exception("Unknown ParameterMode.");
+                    }
+                }
+            }
+
+            return values;
+        }
+
+        private ParameterMode[] ParameterModes(long opcode)
+        {
+            string opcodeString = opcode.ToString();
+
+            var modes = new ParameterMode[3];
+
+            if (opcodeString.Length >= 5)
+            {
+                modes[2] = (ParameterMode)Enum.Parse(typeof(ParameterMode), opcodeString.Substring(opcodeString.Length - 5, 1));
+            }
+            if (opcodeString.Length >= 4)
+            {
+                modes[1] = (ParameterMode)Enum.Parse(typeof(ParameterMode), opcodeString.Substring(opcodeString.Length - 4, 1));
+            }
+            if (opcodeString.Length >= 3)
+            {
+                modes[0] = (ParameterMode)Enum.Parse(typeof(ParameterMode), opcodeString.Substring(opcodeString.Length - 3, 1));
+            }
+
+            return modes;
+        }
+
+        private void Addition(long[] parameters)
+        {
+            _opcodes[parameters[2]] = parameters[0] + parameters[1];
+        }
+
+        private void Multiplication(long[] parameters)
+        {
+            _opcodes[(int)parameters[2]] = parameters[0] * parameters[1];
+        }
+
+        private void Input(long[] parameters)
+        {
+            _opcodes[(int)parameters[0]] = _input.Dequeue();
+        }
+
+        private void Output(long[] parameters)
+        {
+            _output = parameters[0];
+        }
+
+        private void JumpIfTrue(long[] parameters)
+        {
+            if (parameters[0] != 0)
+            {
+                _playhead = (int)parameters[1];
+            }
+        }
+
+        private void JumpIfFalse(long[] parameters)
+        {
+            if (parameters[0] == 0)
+            {
+                _playhead = (int)parameters[1];
+            }
+        }
+
+        private void LessThan(long[] parameters)
+        {
+            _opcodes[(int)parameters[2]] = parameters[0] < parameters[1] ? 1 : 0;
+        }
+
+        private void Equal(long[] parameters)
+        {
+            _opcodes[(int)parameters[2]] = parameters[0] == parameters[1] ? 1 : 0;
+        }
+
+        private void SetRelativeBase(long[] parameters)
+        {
+            _relativeBase += parameters[0];
+        }
     }
 }

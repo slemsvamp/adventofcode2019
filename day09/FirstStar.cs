@@ -8,9 +8,6 @@ namespace day09
     {
         public static string Run(List<long> opcodes)
         {
-            // 203 is not right
-            // 2662308327 is not right
-
             OpcodeRunner opcodeRunner = new OpcodeRunner(5000, opcodes);
 
             opcodeRunner.AddInput(1);
