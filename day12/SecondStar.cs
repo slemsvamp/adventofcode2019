@@ -10,6 +10,147 @@ namespace day12
 
         public static string Run(List<Vector3> coordinates)
         {
+            // 12'937'777'105'696, too low
+            var periodicities = new List<(Vector3, Vector3)>();
+
+            for (int moonIndex = 0; moonIndex < coordinates.Count; moonIndex++)
+            {
+                (Vector3 periodicity, Vector3 starts) = CalculatePeriodicity(coordinates, moonIndex);
+
+                periodicities.Add((periodicity, starts));
+            }
+
+            int c = 0;
+            var sums = new List<long>();
+            foreach (var px in periodicities)
+            {
+                var p = px.Item1;
+                var x = px.Item2;
+                c++;
+                Console.WriteLine($"{c}. X={p.X}, Y={p.Y}, Z={p.Z}, Sum={p.X + p.Y + p.Z}, Starts X={x.X}, Y={x.Y}, Z={x.Z}");
+                sums.Add(p.X + p.Y + p.Z);
+            }
+
+            
+
+
+            return string.Empty;
+        }
+
+        public static (Vector3, Vector3) CalculatePeriodicity(List<Vector3> coordinates, int moonIndex)
+        {
+            var moons = new List<Moon>();
+
+            foreach (var coordinate in coordinates)
+            {
+                moons.Add(new Moon
+                {
+                    Position = coordinate,
+                    Velocity = Vector3.Zero
+                });
+            }
+
+            var turnsRepeated = new List<long>();
+            long turn = 0;
+            long periodicX = -1, periodicY = -1, periodicZ = -1;
+            long periodicXStart = -1, periodicYStart = -1, periodicZStart = -1;
+            bool lockX = false, lockY = false, lockZ = false;
+            var periodics = new List<Vector3>();
+
+            while (true)
+            {
+                OneStep(moons);
+                turn++;
+
+                if (!lockX && CheckX(moons[moonIndex], coordinates[moonIndex]))
+                {
+                    var diffX = turn - periodicX;
+                    if (periodicX > 0 && diffX == periodicX)
+                    {
+                        lockX = true;
+                    }
+
+                    if (!lockX)
+                    {
+                        periodicXStart = turn;
+                    }
+
+                    periodicX = periodicX > 0 ? diffX : turn;
+                }
+
+                if (!lockY && CheckY(moons[moonIndex], coordinates[moonIndex]))
+                {
+                    var diffY = turn - periodicY;
+                    if (periodicY > 0 && diffY == periodicY)
+                    {
+                        lockY = true;
+                    }
+
+                    if (!lockY)
+                    {
+                        periodicYStart = turn;
+                    }
+
+                    periodicY = periodicY > 0 ? diffY : turn;
+                }
+
+                if (!lockZ && CheckZ(moons[moonIndex], coordinates[moonIndex]))
+                {
+                    var diffZ = turn - periodicZ;
+
+                    if (periodicZ > 0 && diffZ == periodicZ)
+                    {
+                        lockZ = true;
+                    }
+
+                    if (!lockZ)
+                    {
+                        periodicZStart = turn;
+                    }
+
+                    periodicZ = periodicZ > 0 ? diffZ : turn;
+                }
+
+                if (lockX && lockY && lockZ)
+                {
+                    return (new Vector3 { X = periodicX, Y = periodicY, Z = periodicZ }, new Vector3 { X = periodicXStart, Y = periodicYStart, Z = periodicZStart });
+                }
+
+                //    if (moons[moonIndex].Position == coordinates[moonIndex] && moons[moonIndex].Velocity == Vector3.Zero)
+                //{
+                //    var diff = turnsRepeated.Count > 0 ? turn - turnsRepeated[turnsRepeated.Count - 1] : turn;
+
+                //    if (diff >= 0)
+                //    {
+                //        if (diff == turn)
+                //        {
+                //            return diff;
+                //        }
+
+                //        turnsRepeated.Add(diff);
+                //    }
+                //}
+            }
+        }
+
+        public static bool CheckX(Moon moon, Vector3 coordinate)
+        {
+            if (moon.Position.X == coordinate.X && moon.Velocity.X == 0) return true;
+            return false;
+        }
+        public static bool CheckY(Moon moon, Vector3 coordinate)
+        {
+            if (moon.Position.Y == coordinate.Y && moon.Velocity.Y == 0) return true;
+            return false;
+        }
+        public static bool CheckZ(Moon moon, Vector3 coordinate)
+        {
+            if (moon.Position.Z == coordinate.Z && moon.Velocity.Z == 0) return true;
+            return false;
+        }
+
+        public static string Run2(List<Vector3> coordinates)
+        {
             _moons = new List<Moon>();
 
             foreach (var coordinate in coordinates)
@@ -50,7 +191,8 @@ namespace day12
 
             while (true)
             {
-                var energy = OneStep(_moons);
+                OneStep(_moons);
+                var energy = CalculateTotalEnergy(_moons);
 
                 var moonIndexZeroEnergy = CalculateEnergy(_moons[moonIndex]);
                 energy = moonIndexZeroEnergy;
@@ -166,19 +308,22 @@ namespace day12
             return false;
         }
 
-        private static long OneStep(List<Moon> moons)
+        private static void OneStep(List<Moon> moons)
         {
-            long totalEnergy = 0;
-
             foreach (var moon in moons)
             {
-                ApplyGravity(moon);
+                ApplyGravity(moon, moons);
             }
 
             foreach (var moon in moons)
             {
                 Update(moon);
             }
+        }
+
+        private static long CalculateTotalEnergy(List<Moon> moons)
+        {
+            long totalEnergy = 0;
 
             foreach (var moon in moons)
             {
@@ -189,7 +334,6 @@ namespace day12
 
             return totalEnergy;
         }
-
 
         private static void PrintMoonPosAndVel(Moon moon)
         {
@@ -203,9 +347,9 @@ namespace day12
             return potentialEnergy * kineticEnergy;
         }
 
-        public static void ApplyGravity(Moon moon)
+        public static void ApplyGravity(Moon moon, List<Moon> otherMoons)
         {
-            foreach (var otherMoon in _moons)
+            foreach (var otherMoon in otherMoons)
             {
                 if (moon == otherMoon)
                 {
