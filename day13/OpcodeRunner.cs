@@ -14,6 +14,8 @@ namespace day13
         private Queue<long> _input;
         private long[] _opcodes;
 
+        private Func<long> AskForInput;
+
         public enum ParameterMode : long
         {
             PositionMode = 0,
@@ -21,12 +23,14 @@ namespace day13
             RelativeMode = 2
         }
 
-        public OpcodeRunner(int memorySize, List<long> opcodes)
+        public OpcodeRunner(int memorySize, List<long> opcodes, Func<long> askForInput)
         {
             Halted = false;
 
             _output = 0;
             _playhead = 0;
+
+            AskForInput = askForInput;
 
             _opcodes = new long[memorySize];
 
@@ -247,7 +251,7 @@ namespace day13
 
         private void Input(long[] parameters)
         {
-            _opcodes[(int)parameters[0]] = _input.Dequeue();
+            _opcodes[(int)parameters[0]] = AskForInput();
         }
 
         private void Output(long[] parameters)

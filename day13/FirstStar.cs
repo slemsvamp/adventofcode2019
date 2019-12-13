@@ -36,7 +36,7 @@ namespace day13
 
         public static string Run(List<long> opcodes)
         {
-            var opcodeRunner = new OpcodeRunner(5000, opcodes);
+            var opcodeRunner = new OpcodeRunner(5000, opcodes, null);
 
             var tileList = new List<Tile>();
 

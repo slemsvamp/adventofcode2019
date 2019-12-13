@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Text;
+using System.Threading;
 
 namespace day13
 {
@@ -53,13 +54,17 @@ namespace day13
             public Queue<long> Input { get; set; }
         }
 
-        public static string Run(List<long> opcodes)
+        private static GameState State { get; set; }
+
+        public static string Run(List<long> opcodes, bool draw)
         {
             // 10710 is too low
+            // 17384 is too low
+            // 3073163 is too high
 
             opcodes[0] = 2;
 
-            var opcodeRunner = new OpcodeRunner(5000, opcodes);
+            var opcodeRunner = new OpcodeRunner(5000, opcodes, CalculateJoystick);
 
             // send 0, get the entire field
 
@@ -67,53 +72,58 @@ namespace day13
             // listen for a ball type
             // input
 
-            GameState state = GetGameState(opcodeRunner);
+            State = GetGameState(opcodeRunner);
+            if (draw)
+            {
+                DrawScreen();
+            }
 
             do
             {
                 bool failed = false;
 
-                state = RunOnce(state, opcodeRunner);
-
-                if (state.Ball.Y > state.Paddle.Y)
-                {
-                    return "GAME OVER";
-                }
-
-                DrawScreen(state);
-                Console.ReadKey(true);
+                RunOnce(opcodeRunner, draw);
 
                 if (!failed)
                 {
                     opcodeRunner.Halted = false;
                 }
-            } while (state.BlockCount > 0);
+            } while (State.BlockCount > 0);
 
-            return state.Score.ToString();
+            // Updates the Score
+            RunOnce(opcodeRunner, draw);
+
+            if (!draw)
+            {
+                Console.Clear();
+                Console.WriteLine("YOU WIN! FINAL SCORE: " + State.Score.ToString());
+            }
+
+            return "";
         }
 
-        private static void DrawScreen(GameState state)
+        private static void DrawScreen()
         {
-            Console.Clear();
-
-            for (int tileIndex = 0; tileIndex < state.Screen.Length; tileIndex++)
+            for (int tileIndex = 0; tileIndex < State.Screen.Length; tileIndex++)
             {
-                Console.SetCursorPosition(tileIndex % state.Width, tileIndex / state.Width);
-                switch (state.Screen[tileIndex])
+                Console.SetCursorPosition(tileIndex % State.Width, tileIndex / State.Width);
+                switch (State.Screen[tileIndex])
                 {
                     case TileType.Ball: Console.Write("o"); break;
                     case TileType.Wall: Console.Write("░"); break;
                     case TileType.Block: Console.Write("#"); break;
+                    case TileType.Empty: Console.Write(" "); break;
                     case TileType.HorizontalPaddle: Console.Write("="); break;
                     default:
                     break;
                 }
             }
+
             Console.SetCursorPosition(1, 0);
-            Console.WriteLine(" Score: " + state.Score + " ");
+            Console.WriteLine(" Score: " + State.Score + " ");
 
             Console.SetCursorPosition(2, 22);
-            Console.WriteLine("Blocks: " + state.BlockCount);
+            Console.WriteLine("Blocks: " + State.BlockCount + "  ");
         }
 
         public static GameState GetGameState(OpcodeRunner opcodeRunner)
@@ -196,46 +206,104 @@ namespace day13
             }
         }
 
-        public static GameState RunOnce(GameState state, OpcodeRunner opcodeRunner)
+        public static void RunOnce(OpcodeRunner opcodeRunner, bool draw)
         {
-            var joystick = CalculateJoystick(state);
-
             var left = opcodeRunner.Run();
             var top = opcodeRunner.Run();
             
             if (left == -1)
             {
-                var score = opcodeRunner.Run();
+                State.Score = opcodeRunner.Run();
             }
             else
             {
                 var type = (TileType)opcodeRunner.Run();
 
-                state.Screen[top * state.Width + left] = type;
+                if (State.Screen[top * State.Width + left] == TileType.Block)
+                {
+                    State.BlockCount--;
+                }
+
+                if (draw)
+                {
+                    Console.SetCursorPosition((int)left, (int)top);
+                }
 
                 switch (type)
                 {
                     case TileType.Ball:
                     {
-                        state.Ball = new Coordinate(left, top);
+                        if (State.Ball.Y < top)
+                        {
+                            State.BallMovement = new Point(State.BallMovement.X, 1);
+                        }
+                        else if (State.Ball.Y > top)
+                        {
+                            State.BallMovement = new Point(State.BallMovement.X, -1);
+                        }
+
+                        if (State.Ball.X > left)
+                        {
+                            State.BallMovement = new Point(-1, State.BallMovement.Y);
+                        }
+                        else if (State.Ball.X < left)
+                        {
+                            State.BallMovement = new Point(1, State.BallMovement.Y);
+                        }
+
+                        State.Ball = new Coordinate(left, top);
+
+                        if (draw)
+                        {
+                            Console.Write("o");
+                            Thread.Sleep(30);
+                        }
+                    }
+                    break;
+                    case TileType.HorizontalPaddle:
+                    {
+                        State.Paddle = new Coordinate(left, top);
+
+                        if (draw)
+                        {
+                            Console.Write("=");
+                            Thread.Sleep(30);
+                        }
+                    }
+                    break;
+                    case TileType.Empty:
+                    {
+                        if (draw)
+                        {
+                            Console.Write(" ");
+                        }
                     }
                     break;
                 }
+
+                State.Screen[top * State.Width + left] = type;
             }
 
-            return state;
+            if (draw)
+            {
+                Console.SetCursorPosition(1, 0);
+                Console.WriteLine(" Score: " + State.Score + " ");
+
+                Console.SetCursorPosition(2, 22);
+                Console.WriteLine("Blocks: " + State.BlockCount + "  ");
+            }
         }
 
-        private static long CalculateJoystick(GameState state)
+        private static long CalculateJoystick()
         {
-            long ballX = state.Ball.X;
-            long ballY = state.Ball.Y;
+            long ballX = State.Ball.X;
+            long ballY = State.Ball.Y;
 
-            if (state.BallMovement.Y == 1)
+            if (State.BallMovement.Y == 1)
             {
-                if (state.BallMovement.X == 1)
+                if (State.BallMovement.X == 1)
                 {
-                    while (ballY < state.Paddle.Y - 1)
+                    while (ballY < State.Paddle.Y - 1)
                     {
                         ballX++;
                         ballY++;
@@ -243,7 +311,7 @@ namespace day13
                 }
                 else
                 {
-                    while (ballY < state.Paddle.Y - 1)
+                    while (ballY < State.Paddle.Y - 1)
                     {
                         ballX--;
                         ballY++;
@@ -252,7 +320,7 @@ namespace day13
             }
             else
             {
-                if (state.BallMovement.X < 0)
+                if (State.BallMovement.X < 0)
                 {
                     ballX--;
                 }
@@ -262,11 +330,11 @@ namespace day13
                 }
             }
 
-            if (ballX < state.Paddle.X)
+            if (ballX < State.Paddle.X)
             {
                 return -1;
             }
-            else if (ballX > state.Paddle.X)
+            else if (ballX > State.Paddle.X)
             {
                 return 1;
             }
