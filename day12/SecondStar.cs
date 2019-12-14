@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Threading;
 
 namespace day12
@@ -11,17 +12,20 @@ namespace day12
 
         public static string Run(List<Vector3> coordinates)
         {
-            // 12'937'777'105'696, too low
-            
-            // 278'013'787'106'916 is right!
+            // this solution is slightly faster i think, but still quite a brute-force solution
+            // i just fixed so that the starting numbers are higher and we increment by the largest periodicity
+            // instead of checking every smallest periodicity increment etc
 
-            // so after a bit of brute-forcing starting with a lower number than i had to
-            // the idea is that the math goes something like this
-            // 1. check when a moon's X, Y and Z position repeats with no energy left, this is called it's periodicity
-            // 2. when we want to determine what times these line up between moons we have to check every increment (smallest periodicity as increment)
-            // 3. it takes longer because i start from zero, i should be able to start from atleast the highest periodicity times the next highest
+            // i still think i need to do some math where we determine the next time the values will meet up on
+            // an even integer. i kind of haven't gotten my brain wrapped around it fully, just half-way
 
-            // if i feel like blowing my brains out, maybe i'll revisit this and solve it the way it's probably meant to be solved
+            // it was enough to brute-force the problem atleast.
+
+            // the 2772 turns one has periodicity of x=6, y=28, z=44.
+            // 2772 / 44 = 63
+            // starting off at atleast 28*44 moving onto 29*44, 30*44, 31*44 until 63*44 will solve this
+            // but this is a small number and works fast, for the real deal i need a mathematical approach
+            // to jump to the next number
 
             var periodicities = new List<(Vector3, Vector3)>();
 
@@ -32,27 +36,26 @@ namespace day12
                 periodicities.Add((periodicity, starts));
             }
 
-            int c = 0;
-            var sums = new List<long>();
-            foreach (var px in periodicities)
-            {
-                var p = px.Item1;
-                var x = px.Item2;
-                c++;
-                Console.WriteLine($"{c}. X={p.X}, Y={p.Y}, Z={p.Z}, Sum={p.X + p.Y + p.Z}, Starts X={x.X}, Y={x.Y}, Z={x.Z}");
-                sums.Add(p.X + p.Y + p.Z);
-            }
+            var periodicitiesOrdered = periodicities
+                                        .Select(p => p.Item1.X)
+                                        .Concat(periodicities.Select(p => p.Item1.Y))
+                                        .Concat(periodicities.Select(p => p.Item1.Z))
+                                        .OrderByDescending(k => k)
+                                        .Distinct()
+                                        .Take(2)
+                                        .ToArray();
 
-            // 12938777705092
-            double turns = 0;
-            for (double i = 286332.0 * 161428.0; i < double.MaxValue; i += 48118)
+            double answer = 0;
+            for (double i = 0; i < double.MaxValue; i++)
             {
+                double turn = periodicitiesOrdered[0] * (periodicitiesOrdered[1] + i);
+
                 int points = 0;
                 foreach (var periodicity in periodicities)
                 {
-                    var x = i / periodicity.Item1.X;
-                    var y = i / periodicity.Item1.Y;
-                    var z = i / periodicity.Item1.Z;
+                    var x = turn / periodicity.Item1.X;
+                    var y = turn / periodicity.Item1.Y;
+                    var z = turn / periodicity.Item1.Z;
 
                     if (x == Math.Floor(x) && y == Math.Floor(y) && z == Math.Floor(z))
                     {
@@ -61,12 +64,12 @@ namespace day12
                 }
                 if (points == 4)
                 {
-                    turns = i;
+                    answer = turn;
                     break;
                 }
             }
 
-            return turns.ToString();
+            return answer.ToString();
         }
 
         public static (Vector3, Vector3) CalculatePeriodicity(List<Vector3> coordinates, int moonIndex, bool draw)
