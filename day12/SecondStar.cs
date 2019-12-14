@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Threading;
 
 namespace day12
@@ -11,11 +12,22 @@ namespace day12
         public static string Run(List<Vector3> coordinates)
         {
             // 12'937'777'105'696, too low
+            
+            // 278'013'787'106'916 is right!
+
+            // so after a bit of brute-forcing starting with a lower number than i had to
+            // the idea is that the math goes something like this
+            // 1. check when a moon's X, Y and Z position repeats with no energy left, this is called it's periodicity
+            // 2. when we want to determine what times these line up between moons we have to check every increment (smallest periodicity as increment)
+            // 3. it takes longer because i start from zero, i should be able to start from atleast the highest periodicity times the next highest
+
+            // if i feel like blowing my brains out, maybe i'll revisit this and solve it the way it's probably meant to be solved
+
             var periodicities = new List<(Vector3, Vector3)>();
 
             for (int moonIndex = 0; moonIndex < coordinates.Count; moonIndex++)
             {
-                (Vector3 periodicity, Vector3 starts) = CalculatePeriodicity(coordinates, moonIndex);
+                (Vector3 periodicity, Vector3 starts) = CalculatePeriodicity(coordinates, moonIndex, false);
 
                 periodicities.Add((periodicity, starts));
             }
@@ -31,13 +43,33 @@ namespace day12
                 sums.Add(p.X + p.Y + p.Z);
             }
 
-            
+            // 12938777705092
+            double turns = 0;
+            for (double i = 286332.0 * 161428.0; i < double.MaxValue; i += 48118)
+            {
+                int points = 0;
+                foreach (var periodicity in periodicities)
+                {
+                    var x = i / periodicity.Item1.X;
+                    var y = i / periodicity.Item1.Y;
+                    var z = i / periodicity.Item1.Z;
 
+                    if (x == Math.Floor(x) && y == Math.Floor(y) && z == Math.Floor(z))
+                    {
+                        points++;
+                    }
+                }
+                if (points == 4)
+                {
+                    turns = i;
+                    break;
+                }
+            }
 
-            return string.Empty;
+            return turns.ToString();
         }
 
-        public static (Vector3, Vector3) CalculatePeriodicity(List<Vector3> coordinates, int moonIndex)
+        public static (Vector3, Vector3) CalculatePeriodicity(List<Vector3> coordinates, int moonIndex, bool draw)
         {
             var moons = new List<Moon>();
 
@@ -62,9 +94,10 @@ namespace day12
                 OneStep(moons);
                 turn++;
 
-                if (!lockX && CheckX(moons[moonIndex], coordinates[moonIndex]))
+                if (!lockX && moons[moonIndex].Position.X == coordinates[moonIndex].X && moons[moonIndex].Velocity.X == 0)
                 {
                     var diffX = turn - periodicX;
+
                     if (periodicX > 0 && diffX == periodicX)
                     {
                         lockX = true;
@@ -78,9 +111,10 @@ namespace day12
                     periodicX = periodicX > 0 ? diffX : turn;
                 }
 
-                if (!lockY && CheckY(moons[moonIndex], coordinates[moonIndex]))
+                if (!lockY && moons[moonIndex].Position.Y == coordinates[moonIndex].Y && moons[moonIndex].Velocity.Y == 0)
                 {
                     var diffY = turn - periodicY;
+
                     if (periodicY > 0 && diffY == periodicY)
                     {
                         lockY = true;
@@ -94,7 +128,7 @@ namespace day12
                     periodicY = periodicY > 0 ? diffY : turn;
                 }
 
-                if (!lockZ && CheckZ(moons[moonIndex], coordinates[moonIndex]))
+                if (!lockZ && moons[moonIndex].Position.Z == coordinates[moonIndex].Z && moons[moonIndex].Velocity.Z == 0)
                 {
                     var diffZ = turn - periodicZ;
 
@@ -113,6 +147,23 @@ namespace day12
 
                 if (lockX && lockY && lockZ)
                 {
+                    if (draw)
+                    {
+                        Console.Clear();
+                        DrawCoordinate(moons[0].Position, ConsoleColor.Red);
+                        DrawCoordinate(moons[1].Position, ConsoleColor.Green);
+                        DrawCoordinate(moons[2].Position, ConsoleColor.Blue);
+                        DrawCoordinate(moons[3].Position, ConsoleColor.Yellow);
+
+                        Console.SetCursorPosition(2, 2);
+                        Console.WriteLine("Turn " + turn + "   ");
+
+                        Console.SetCursorPosition(2, 4);
+                        Console.WriteLine("Energy " + CalculateTotalEnergy(moons) + "   ");
+
+                        Thread.Sleep(30);
+                    }
+
                     return (new Vector3 { X = periodicX, Y = periodicY, Z = periodicZ }, new Vector3 { X = periodicXStart, Y = periodicYStart, Z = periodicZStart });
                 }
 
@@ -131,6 +182,42 @@ namespace day12
                 //    }
                 //}
             }
+        }
+
+        private static string[] ZArray =
+        {
+            "·", "~", "×", "¤", "o", "©", "Ø", "O", "@", "█"
+        };
+
+        private static void DrawCoordinate(Vector3 coordinate, ConsoleColor color)
+        {
+            Console.ForegroundColor = color;
+            var zIndex = (int)(coordinate.Z); // / 10);
+
+            if (zIndex > 9)
+            {
+                zIndex = 9;
+            }
+            else if (zIndex < 0)
+            {
+                zIndex = 0;
+            }
+
+            string sign = ZArray[zIndex];
+
+            int x = (int)coordinate.X; // / 10;
+            int y = (int)coordinate.Y; // / 10;
+
+            x += 50;
+            y += 40;
+
+            if (x >= 0 && x < 100 && y >= 0 && y < 79)
+            {
+                Console.SetCursorPosition(x, y);
+                Console.Write(sign);
+            }
+
+            Console.ForegroundColor = ConsoleColor.White;
         }
 
         public static bool CheckX(Moon moon, Vector3 coordinate)

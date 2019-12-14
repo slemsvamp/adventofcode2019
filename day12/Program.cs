@@ -6,7 +6,10 @@ namespace day12
     {
         static void Main(string[] args)
         {
-            var parsedInput = InputParser.Parse("mockInput.txt");
+            Console.SetBufferSize(100, 80);
+            Console.SetWindowSize(100, 80);
+
+            var parsedInput = InputParser.Parse("input.txt");
 
             Console.WriteLine("---- Part 01 ----");
             var part1 = FirstStar.Run(parsedInput);
