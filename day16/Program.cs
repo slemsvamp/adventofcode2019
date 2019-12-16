@@ -7,7 +7,7 @@ namespace day16
         static void Main(string[] args)
         {
             Console.WriteLine("---- Part 01 ----");
-            var part1 = FirstStar.Run();
+            var part1 = "Not run"; // FirstStar.Run();
             Console.WriteLine($"Result: {part1}");
             Console.WriteLine("-----------------");
 

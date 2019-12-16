@@ -8,21 +8,18 @@ namespace day16
 {
     public class InputParser
     {
-        public static List<long> Parse(string filename)
+        public static int[] Parse(string filename)
         {
             var lines = File.ReadAllLines(filename);
 
-            var opcodes = new List<long>();
+            var digits = new List<int>();
 
-            foreach (var line in lines)
+            foreach (var character in lines[0])
             {
-                foreach (var opcode in line.Split(new[] { "," }, StringSplitOptions.None))
-                {
-                    opcodes.Add(long.Parse(opcode));
-                }
+                digits.Add(int.Parse(character.ToString()));
             }
 
-            return opcodes;
+            return digits.ToArray();
         }
     }
 }
