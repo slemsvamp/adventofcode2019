@@ -4,11 +4,14 @@ namespace day18
 {
     class Program
     {
+        public static readonly int ScreenWidth = 83;
+        public static readonly int ScreenHeight = 50;
+
         static void Main(string[] args)
         {
 #if DEBUG
-            Console.SetWindowSize(83, 80);
-            Console.SetBufferSize(83, 80);
+            Console.SetWindowSize(ScreenWidth, ScreenHeight);
+            Console.SetBufferSize(ScreenWidth, ScreenHeight);
 #endif
 
             Console.WriteLine("---- Part 01 ----");

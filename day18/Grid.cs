@@ -161,5 +161,42 @@ namespace day18
 
             return new PathfinderNode(point, isDoor ? pointData : '\0', pointData);
         }
+
+        public void Draw()
+        {
+            for (int index = 0; index < _size.Width * _size.Height; index++)
+            {
+                var y = index / _size.Width;
+                var x = index % _size.Width;
+
+                if (x >= 0 && x < Program.ScreenWidth && y >= 0 && y < Program.ScreenHeight)
+                {
+                    Console.SetCursorPosition(x, y);
+                    var character = Map[index];
+
+                    switch (character)
+                    {
+                        case '.': Console.ForegroundColor = ConsoleColor.DarkCyan; break;
+                        case '#': Console.ForegroundColor = ConsoleColor.DarkRed; break;
+                        case '@': Console.ForegroundColor = ConsoleColor.Green; break;
+                        default:
+                            if (character.ToString().ToUpper() == character.ToString())
+                            {
+                                Console.ForegroundColor = ConsoleColor.Blue;
+                            }
+                            else
+                            {
+                                Console.ForegroundColor = ConsoleColor.Yellow;
+                            }
+                            break;
+                    }
+
+                    Console.Write(character);
+                }
+
+                Console.ForegroundColor = ConsoleColor.White;
+            }
+        }
+
     }
 }

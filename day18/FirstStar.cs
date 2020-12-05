@@ -50,9 +50,35 @@ namespace day18
 
             var graph = new Graph(retraces, _keyPositions, _characterPosition);
 
-            graph.StartTraversal('@', new HashSet<char>(_keyPositions.Keys));
+            grid.Draw();
+
+            // graph.StartTraversal('@', new HashSet<char>(_keyPositions.Keys));
+
+            Console.ReadKey(true);
 
             return string.Empty;
+        }
+
+        private static void DrawPath(Point[] drawPath)
+        {
+            Console.BackgroundColor = ConsoleColor.DarkMagenta;
+            Console.ForegroundColor = ConsoleColor.Yellow;
+
+            for (int index = 0; index < drawPath.Length; index++)
+            {
+                var coordinate = drawPath[index];
+
+                if (coordinate.X < 0 && coordinate.X > 81 && coordinate.Y < 0 && coordinate.Y > 80)
+                {
+                    continue;
+                }
+
+                Console.SetCursorPosition(coordinate.X, coordinate.Y);
+                Console.Write("·");
+            }
+
+            Console.BackgroundColor = ConsoleColor.Black;
+            Console.ForegroundColor = ConsoleColor.White;
         }
 
 
@@ -310,65 +336,6 @@ namespace day18
 
             return _bestLength;
         }
-
-        //private static void DrawPath(Grid grid, Path drawPath)
-        //{
-        //    Console.BackgroundColor = ConsoleColor.DarkMagenta;
-        //    Console.ForegroundColor = ConsoleColor.Yellow;
-
-        //    for (int index = 0; index < drawPath.Length; index++)
-        //    {
-        //        var coordinate = drawPath.Retrace.Path[index];
-
-        //        if (coordinate.X < 0 && coordinate.X > 81 && coordinate.Y < 0 && coordinate.Y > 80)
-        //        {
-        //            continue;
-        //        }
-
-        //        Console.SetCursorPosition(coordinate.X, coordinate.Y);
-        //        Console.Write("·");
-        //    }
-
-        //    Console.BackgroundColor = ConsoleColor.Black;
-        //    Console.ForegroundColor = ConsoleColor.White;
-        //}
-
-        private static void DrawGrid(Grid grid)
-        {
-            for (int index = 0; index < grid.Size.Width * grid.Size.Height; index++)
-            {
-                var y = index / grid.Size.Width;
-                var x = index % grid.Size.Width;
-
-                if (x >= 0 && x < 82 && y >= 0 && y < 80)
-                {
-                    Console.SetCursorPosition(x, y);
-                    var character = grid.Map[index];
-
-                    switch (character)
-                    {
-                        case '.': Console.ForegroundColor = ConsoleColor.DarkCyan; break;
-                        case '#': Console.ForegroundColor = ConsoleColor.DarkRed; break;
-                        case '@': Console.ForegroundColor = ConsoleColor.Green; break;
-                        default:
-                            if (character.ToString().ToUpper() == character.ToString())
-                            {
-                                Console.ForegroundColor = ConsoleColor.Blue;
-                            }
-                            else
-                            {
-                                Console.ForegroundColor = ConsoleColor.Yellow;
-                            }
-                            break;
-                    }
-
-                    Console.Write(character);
-                }
-
-                Console.ForegroundColor = ConsoleColor.White;
-            }
-        }
-
 
 
         public class Path
