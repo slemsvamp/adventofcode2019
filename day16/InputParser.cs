@@ -21,5 +21,10 @@ namespace day16
 
             return digits.ToArray();
         }
+
+        public static string ParseAsString(string filename)
+        {
+            return File.ReadAllText(filename);
+        }
     }
 }

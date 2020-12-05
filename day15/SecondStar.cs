@@ -40,13 +40,31 @@ namespace day15
         private static bool[] _scouted;
         private static int[] _explored;
 
+        private enum State
+        {
+            Unknown = -1,
+            ExploreNorth = 0,
+            ReturnExploreNorth = 1,
+            ExploreSouth = 2,
+            ReturnExploreSouth = 3,
+            ExploreWest = 4,
+            ReturnExploreWest = 5,
+            ExploreEast = 6,
+            ReturnExploreEast = 7,
+            Walk = 8,
+            SuccessfulWalk = 9,
+            Backtrack = 10,
+        }
+
         private static int _state;
+        private static long _nextInput;
 
         private static OpcodeRunner _opcodeRunner { get; set; }
         private static Size _size { get; set; }
         private static Grid _grid { get; set; }
         private static Point _position { get; set; }
         public static Point _oxygenSystem { get; set; }
+        private static PathTree _backtrack { get; set; }
 
         private static Stack<Direction> _history;
 
@@ -64,12 +82,16 @@ namespace day15
 
         public static string Run()
         {
+            // 383 too high
+            // 389 too high
+            // 390 too high
+
             var opcodes = InputParser.Parse("input.txt");
 
             _pathTrees = new Stack<PathTree>();
             _pathTrees.Push(new PathTree());
 
-            _opcodeRunner = new OpcodeRunner(opcodes.Count, opcodes, GetMovementCommand);
+            _opcodeRunner = new OpcodeRunner(opcodes.Count, opcodes, AskForInput);
             _history = new Stack<Direction>();
             _size = new Size { Width = 40, Height = 44 };
             _grid = new Grid(_size);
@@ -87,65 +109,216 @@ namespace day15
             Console.Clear();
             Console.CursorVisible = false;
 
+            _state = (int)State.ExploreNorth;
+            _nextInput = 1;
+            _lastDirection = Direction.North;
+
             while (exploring)
             {
-                // Trail (leads back to starting point)
+                var status = _opcodeRunner.Run();
 
-                // CheckSquare();
-                // MarkUnexploredDirections();
+                Record((Status)status);
 
-                // 10:
-                // IF UnexploredDirections > 0
-                //   WalkUnexploredDirection();
-                // ELSE
-                //   Backtrack();
-                //   GOTO 10
-                // 
+                _state = (int)NextState((Status)status);
 
-                CheckSquare();
+                _nextInput = NextInput();
 
-                Walk();
-
-                if (_state == 11)
+                if (_nextInput == -999)
                 {
-                    DrawMap(_grid, _position);
-                    var key = Console.ReadKey(true);
-                    if (key.Key == ConsoleKey.Escape)
-                    {
-                        return "";
-                    }
+                    exploring = false;
+                    break;
+                }
 
-                    _state = 0;
+                _lastDirection = (Direction)_nextInput;
+            }
+
+            Console.WriteLine("Farthest In: " + _farthestIn.ToString());
+
+            // ok now let's see, do the oxygen filling thing
+            var turnsToFillWithOxygen = FillWithOxygen(_grid, new Point(0, 10));
+
+            return turnsToFillWithOxygen.ToString();
+        }
+
+        private static void Record(Status status)
+        {
+            var index = _position.Y * _size.Width + _position.X;
+
+            if (new[] { State.ExploreNorth, State.ExploreSouth, State.ExploreWest, State.ExploreEast }.Contains((State)_state))
+            {
+                var newPosition = GetNewPosition();
+                var newIndex = newPosition.Y * _size.Width + newPosition.X;
+
+                if (_explored[index] == 0)
+                {
+                    _explored[index] = (int)ExploreInfo.Ground;
+                }
+
+                switch (status)
+                {
+                    case Status.HitAWall:
+                    {
+                        _grid.SetPoint(newPosition, GridData.Wall);
+                        _explored[newIndex] = (int)ExploreInfo.Wall;
+                        _scouted[newIndex] = true;
+                    }
+                    break;
+                    case Status.MovedOneStepFoundOxygenSystem:
+                    case Status.MovedOneStep:
+                    {
+                        _position = newPosition;
+                        int canWalk = 0;
+                        switch (_lastDirection)
+                        {
+                            case Direction.North: canWalk = (int)ExploreInfo.CanWalkNorth; break;
+                            case Direction.South: canWalk = (int)ExploreInfo.CanWalkSouth; break;
+                            case Direction.West: canWalk = (int)ExploreInfo.CanWalkWest; break;
+                            case Direction.East: canWalk = (int)ExploreInfo.CanWalkEast; break;
+                        }
+                        _explored[index] |= canWalk;
+                        _scouted[index] = true;
+                    }
+                    break;
                 }
             }
-
-            return "";
+            else
+            {
+                _position = GetNewPosition();
+            }
         }
 
-        private static void Walk()
+        private static State NextState(Status status)
         {
-            _state = 8;
-
-            var status = _opcodeRunner.Run();
-
-            _pathTrees.Peek().History.Push(_lastDirection);
-
-            if ((Status)status == Status.HitAWall)
+            if (_state == (int)State.ExploreNorth)
             {
-                throw new Exception("This shouldn't happen..");
+                return status == Status.HitAWall ? State.ExploreSouth : State.ReturnExploreNorth;
+            }
+            else if (_state == (int)State.ReturnExploreNorth)
+            {
+                return State.ExploreSouth;
+            }
+            else if (_state == (int)State.ExploreSouth)
+            {
+                return status == Status.HitAWall ? State.ExploreWest : State.ReturnExploreSouth;
+            }
+            else if (_state == (int)State.ReturnExploreSouth)
+            {
+                return State.ExploreWest;
+            }
+            else if (_state == (int)State.ExploreWest)
+            {
+                return status == Status.HitAWall ? State.ExploreEast : State.ReturnExploreWest;
+            }
+            else if (_state == (int)State.ReturnExploreWest)
+            {
+                return State.ExploreEast;
+            }
+            else if (_state == (int)State.ExploreEast)
+            {
+                return status == Status.HitAWall ? State.Walk : State.ReturnExploreEast;
+            }
+            else if (_state == (int)State.ReturnExploreEast)
+            {
+                return State.Walk;
+            }
+            else if (_state == (int)State.Walk)
+            {
+                if (_backtrack == null)
+                {
+                    return State.ExploreNorth;
+                }
+
+                return State.Walk;
             }
 
-            _position = GetNewPosition();
-
-            _state = 9;
+            return State.Unknown;
         }
 
-        private static Point GetNewPosition()
+        private static long _farthestIn { get; set; }
+
+        private static long NextInput()
         {
-            return new Point(_position.X + (_lastDirection == Direction.West ? -1 : _lastDirection == Direction.East ? 1 : 0), _position.Y + (_lastDirection == Direction.North ? -1 : _lastDirection == Direction.South ? 1 : 0));
+            switch ((State)_state)
+            {
+                case State.ExploreNorth: return 1;
+                case State.ReturnExploreNorth: return 2;
+                case State.ExploreSouth: return 2;
+                case State.ReturnExploreSouth: return 1;
+                case State.ExploreWest: return 3;
+                case State.ReturnExploreWest: return 4;
+                case State.ExploreEast: return 4;
+                case State.ReturnExploreEast: return 3;
+            }
+
+            if (_state == (int)State.Walk)
+            {
+                bool wasBacktracking = _backtrack != null;
+
+                if (_backtrack != null && _backtrack.History.Count == 0)
+                {
+                    _backtrack = null;
+                }
+
+                if (_backtrack == null)
+                {
+                    if (!wasBacktracking && IsIntersection())
+                    {
+                        _pathTrees.Push(new PathTree());
+                    }
+
+                    var unscoutedDirection = UnscoutedDirection();
+
+                    if (unscoutedDirection != Direction.None)
+                    {
+                        _pathTrees.Peek().History.Push(unscoutedDirection);
+
+                        int length = 0;
+                        foreach (var tree in _pathTrees)
+                        {
+                            length += tree.History.Count;
+                        }
+                        if (length > _farthestIn)
+                        {
+                            _farthestIn = length;
+                        }
+
+                        return (long)unscoutedDirection;
+                    }
+
+                    if (_pathTrees.Count == 0)
+                    {
+                        return -999;
+                    }
+
+                    _backtrack = _pathTrees.Pop();
+                }
+
+                return (long)Reverse(_backtrack.History.Pop());
+            }
+
+            return -1;
         }
 
-        private static Direction DetermineWalkingDirection()
+        private static bool IsIntersection()
+        {
+            var positionIndex = _position.Y * _size.Width + _position.X;
+
+            int paths = 0;
+
+            paths += (_explored[positionIndex] & (int)ExploreInfo.CanWalkNorth) > 0 ? 1 : 0;
+            paths += (_explored[positionIndex] & (int)ExploreInfo.CanWalkSouth) > 0 ? 1 : 0;
+            paths += (_explored[positionIndex] & (int)ExploreInfo.CanWalkWest) > 0 ? 1 : 0;
+            paths += (_explored[positionIndex] & (int)ExploreInfo.CanWalkEast) > 0 ? 1 : 0;
+
+            return paths >= 3;
+        }
+
+        public static long AskForInput()
+        {
+            return _nextInput;
+        }
+
+        private static Direction UnscoutedDirection()
         {
             var northPoint = _position.Add(new Point(0, -1));
             var southPoint = _position.Add(new Point(0, 1));
@@ -174,96 +347,21 @@ namespace day15
             return Direction.None;
         }
 
-        private static void CheckSquare()
+        private static Direction Reverse(Direction direction)
         {
-            _state = 0;
-
-            while (_state < 8)
+            switch (direction)
             {
-                var status = (Status)_opcodeRunner.Run();
-
-                var index = _position.Y * _size.Width + _position.X;
-
-                if (new[] { 0, 2, 4, 6 }.Contains(_state))
-                {
-                    var newPosition = GetNewPosition();
-                    var newIndex = newPosition.Y * _size.Width + newPosition.X;
-
-                    if (_explored[index] == 0)
-                    {
-                        _explored[index] = (int)ExploreInfo.Ground;
-                    }
-
-                    switch (status)
-                    {
-                        case Status.HitAWall:
-                        {
-                            _grid.SetPoint(newPosition, GridData.Wall);
-                            _explored[newIndex] = (int)ExploreInfo.Wall;
-                            _scouted[newIndex] = true;
-                            _state += 2;
-                        }
-                        break;
-                        case Status.MovedOneStep:
-                        {
-                            _position = newPosition;
-                            int canWalk = 0;
-                            switch (_lastDirection)
-                            {
-                                case Direction.North: canWalk = (int)ExploreInfo.CanWalkNorth; break;
-                                case Direction.South: canWalk = (int)ExploreInfo.CanWalkSouth; break;
-                                case Direction.West: canWalk = (int)ExploreInfo.CanWalkWest; break;
-                                case Direction.East: canWalk = (int)ExploreInfo.CanWalkEast; break;
-                            }
-                            _explored[index] |= canWalk;
-                            _scouted[index] = true;
-                            _explored[newIndex] = (int)ExploreInfo.Ground;
-                            _state += 1;
-                        }
-                        break;
-                        case Status.MovedOneStepFoundOxygenSystem:
-                        {
-                            _explored[newPosition.Y * _size.Width + newPosition.X] = 1;
-                            _scouted[index] = true;
-                            _state += 1;
-                        }
-                        break;
-                    }
-                }
-                else
-                {
-                    _position = GetNewPosition();
-                    _state += 1;
-                }
+                case Direction.East: return Direction.West;
+                case Direction.West: return Direction.East;
+                case Direction.South: return Direction.North;
+                case Direction.North: return Direction.South;
             }
-
-            var explorationData = _explored[_position.Y * _size.Width + _position.X];
-            var intersectionInfo = new List<Direction>();
-
-            if ((explorationData & (int)ExploreInfo.CanWalkNorth) > 0) intersectionInfo.Add(Direction.North);
-            if ((explorationData & (int)ExploreInfo.CanWalkSouth) > 0) intersectionInfo.Add(Direction.South);
-            if ((explorationData & (int)ExploreInfo.CanWalkWest) > 0) intersectionInfo.Add(Direction.West);
-            if ((explorationData & (int)ExploreInfo.CanWalkEast) > 0) intersectionInfo.Add(Direction.East);
-
-            if (intersectionInfo.Count > 0)
-            {
-                _pathTrees.Push(new PathTree());
-            }
+            return Direction.None;
         }
 
-        private static void Backtrack()
+        private static Point GetNewPosition()
         {
-            _state = 10;
-
-            while (_pathTrees.Peek().History.Count > 0)
-            {
-                _opcodeRunner.Run();
-                _position = GetNewPosition();
-            }
-
-            _pathTrees.Pop();
-
-            _state = 8;
+            return new Point(_position.X + (_lastDirection == Direction.West ? -1 : _lastDirection == Direction.East ? 1 : 0), _position.Y + (_lastDirection == Direction.North ? -1 : _lastDirection == Direction.South ? 1 : 0));
         }
 
         private static void DrawMap(Grid grid, Point robot)
@@ -299,45 +397,61 @@ namespace day15
             Console.ForegroundColor = ConsoleColor.White;
         }
 
-        public static long GetMovementCommand()
+        private static int FillWithOxygen(Grid grid, Point startingPoint)
         {
-            byte movementOrder = 1;
-            switch (_state)
+            HashSet<int> closed = new HashSet<int>();
+            List<int> open = new List<int>();
+            List<int> nextOpen = new List<int>();
+
+            open.Add(startingPoint.Y * _size.Width + startingPoint.X);
+
+            int minutes = 0;
+
+            while (open.Count > 0)
             {
-                case 0: { movementOrder = 1; } break;
-                case 1: { movementOrder = 2; } break;
-                case 2: { movementOrder = 2; } break;
-                case 3: { movementOrder = 1; } break;
-                case 4: { movementOrder = 3; } break;
-                case 5: { movementOrder = 4; } break;
-                case 6: { movementOrder = 4; } break;
-                case 7: { movementOrder = 3; } break;
-                case 8:
-                {
-                    _lastDirection = DetermineWalkingDirection();
+                nextOpen.Clear();
 
-                    if (_lastDirection == Direction.None)
-                    {
-                        _state = 10;
-                        return 0;
-                    }
-                } return (long)_lastDirection;
-                case 10:
+                foreach (var current in open)
                 {
-                    var direction = _pathTrees.Peek().History.Pop();
+                    closed.Add(current);
 
-                    switch (direction)
+                    var point = new Point(current % _size.Width, current / _size.Width);
+
+                    var neighbours = grid.GetNeighbours(point, false);
+                
+                    foreach (var neighbour in neighbours)
                     {
-                        case Direction.North: return (int)Direction.South;
-                        case Direction.South: return (int)Direction.North;
-                        case Direction.West: return (int)Direction.East;
-                        case Direction.East: return (int)Direction.West;
+                        var neighbourIndex = neighbour.Position.Y * _size.Width + neighbour.Position.X;
+
+                        var gridData = grid.Map[neighbourIndex];
+
+                        if (gridData == (byte)GridData.Wall)
+                        {
+                            closed.Add(neighbourIndex);
+                            continue;
+                        }
+
+                        if (!closed.Contains(neighbourIndex))
+                        {
+                            nextOpen.Add(neighbourIndex);
+                        }
                     }
-                } break;
+                }
+
+                open.Clear();
+
+                foreach (var next in nextOpen)
+                {
+                    open.Add(next);
+                }
+
+                minutes++;
             }
 
-            _lastDirection = (Direction)movementOrder;
-            return movementOrder;
+            DrawMap(grid, startingPoint);
+            Console.ReadKey(true);
+
+            return minutes - 1;
         }
     }
 }

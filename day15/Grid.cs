@@ -43,7 +43,18 @@ namespace day15
 
         public PathFinderNode[] GetNeighbours(Point point, bool allowDiagonals)
         {
-            throw new NotImplementedException();
+            var northPoint = point.Add(new Point(0, -1));
+            var southPoint = point.Add(new Point(0, 1));
+            var westPoint = point.Add(new Point(-1, 0));
+            var eastPoint = point.Add(new Point(1, 0));
+
+            return new PathFinderNode[]
+            {
+                new PathFinderNode(northPoint),
+                new PathFinderNode(southPoint),
+                new PathFinderNode(westPoint),
+                new PathFinderNode(eastPoint)
+            };
         }
 
         public PathFinderNode GetNodeFromWorldPoint(Point point)

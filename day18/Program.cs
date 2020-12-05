@@ -1,16 +1,18 @@
 ﻿using System;
 
-namespace day15
+namespace day18
 {
     class Program
     {
         static void Main(string[] args)
         {
-            Console.SetBufferSize(100, 80);
-            Console.SetWindowSize(100, 80);
+#if DEBUG
+            Console.SetWindowSize(83, 80);
+            Console.SetBufferSize(83, 80);
+#endif
 
             Console.WriteLine("---- Part 01 ----");
-            var part1 = "Not set"; //FirstStar.Run();
+            var part1 = FirstStar.Run();
             Console.WriteLine($"Result: {part1}");
             Console.WriteLine("-----------------");
 
