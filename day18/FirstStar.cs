@@ -12,345 +12,96 @@ namespace day18
         private static Dictionary<char, Point> _keyPositions { get; set; }
         private static Dictionary<char, Point> _doorPositions { get; set; }
         private static Point _characterPosition { get; set; }
-        private static List<char> _collectedKeys { get; set; }
 
-        private volatile static int _bestLength;
-        private volatile static int _finishedThreads;
+        private static Size _size;
+        private static string[] _map;
+        private static HashSet<string> _seen;
+
+        private static int[] _dirX = new[] { -1, 0, 1, 0 };
+        private static int[] _dirY = new[] { 0, -1, 0, 1 };
+
+        private const char WALL = '#';
 
         public static string Run()
         {
-            var map = InputParser.Parse("input.txt");
-            var size = new Size(map[0].Length, map.Length);
+            _map = InputParser.Parse("input.txt");
+            _size = new Size(_map[0].Length, _map.Length);
 
             _keyPositions = new Dictionary<char, Point>();
             _doorPositions = new Dictionary<char, Point>();
-            _bestLength = int.MaxValue;
 
-            var keyRegex = new Regex("^[a-z]$");
-            var doorRegex = new Regex("^[A-Z]$");
-
-            for (int y = 0; y < size.Height; y++)
-            {
-                var row = map[y];
-                for (int x = 0; x < size.Width; x++)
+            for (int y = 0; y < _size.Height; y++)
+                for (int x = 0; x < _size.Width; x++)
                 {
                     var point = new Point(x, y);
-                    var character = row[x];
+                    var character = _map[y][x];
                     if (character == '@')
                         _characterPosition = point;
-                    else if (keyRegex.Match(character.ToString()).Success)
+                    else if (character >= 'a' && character <= 'z')
                         _keyPositions.Add(character, point);
-                    else if (doorRegex.Match(character.ToString()).Success)
+                    else if (character >= 'A' && character <= 'Z')
                         _doorPositions.Add(character, point);
                 }
-            }
 
-            var grid = new Grid(map, size);
-            var retraces = grid.GenerateRetraces(_keyPositions, _characterPosition);
+            _seen = new HashSet<string>();
 
-            var graph = new Graph(retraces, _keyPositions, _characterPosition);
-
-            grid.Draw();
-
-            // graph.StartTraversal('@', new HashSet<char>(_keyPositions.Keys));
-
-            Console.ReadKey(true);
-
-            return string.Empty;
-        }
-
-        private static void DrawPath(Point[] drawPath)
-        {
-            Console.BackgroundColor = ConsoleColor.DarkMagenta;
-            Console.ForegroundColor = ConsoleColor.Yellow;
-
-            for (int index = 0; index < drawPath.Length; index++)
+            var queue = new Queue<State>();
+            queue.Enqueue(new State
             {
-                var coordinate = drawPath[index];
-
-                if (coordinate.X < 0 && coordinate.X > 81 && coordinate.Y < 0 && coordinate.Y > 80)
-                {
-                    continue;
-                }
-
-                Console.SetCursorPosition(coordinate.X, coordinate.Y);
-                Console.Write("·");
-            }
-
-            Console.BackgroundColor = ConsoleColor.Black;
-            Console.ForegroundColor = ConsoleColor.White;
-        }
-
-
-#if oldcodeisenabled
-        public static string Run2()
-        {
-            // 5876 is too high
-            // 6382 is too high
-
-            var map = InputParser.Parse("input.txt");
-            var width = map.IndexOf('\r');
-
-            map = map.Replace("\r\n", "");
-
-            _keyPositions = new Dictionary<char, Point>();
-            _doorPositions = new Dictionary<char, Point>();
-            _bestLength = int.MaxValue;
-
-            for (int index = 0; index < map.Length; index++)
-            {
-                var character = map[index];
-
-                switch (character)
-                {
-                    case '@':
-                        _characterPosition = new Point(index % width, index / width);
-                        continue;
-                    case '#':
-                    case '.':
-                        continue;
-                    default:
-                        if (character.ToString() == character.ToString().ToUpper())
-                        {
-                            _doorPositions.Add(character, new Point(index % width, index / width));
-                        }
-                        else
-                        {
-                            _keyPositions.Add(character, new Point(index % width, index / width));
-                        }
-                        continue;
-                }
-            }
-
-            var grid = new Grid(new Size(width, map.Length / width))
-            {
-                Map = map.ToCharArray()
-            };
-
-#if DEBUG
-            //DrawGrid(grid);
-#endif
-            //var keyList = new List<(char, Point)>();
-            //foreach (var kvp in _keyPositions)
-            //{
-            //    keyList.Add((kvp.Key, kvp.Value));
-            //}
-
-            //var pathfinder = new Pathfinder();
-            //var retraceData = new List<RetraceData>();
-
-            //for (int fromIndex = 0; fromIndex < keyList.Count; fromIndex++)
-            //{
-            //    for (int toIndex = 0; toIndex < keyList.Count; toIndex++)
-            //    {
-            //        if (fromIndex == toIndex)
-            //            continue;
-
-            //        var retrace = pathfinder.FindPath(keyList[fromIndex].Item2, keyList[toIndex].Item2, grid);
-
-            //        retraceData.Add(new RetraceData
-            //        {
-            //            From = keyList[fromIndex].Item1,
-            //            To = keyList[toIndex].Item1,
-            //            Retrace = retrace
-            //        });
-            //    }
-            //}
-
-            var allPossibleRetraces = GetAllPossibleRetraces(grid).ToList();
-
-            var characterNode = new Node { Name = '@', Point = _characterPosition };
-            var nodeList = new List<Node>();
-            foreach (var keyValuePair in _keyPositions)
-                nodeList.Add(new Node { Name = keyValuePair.Key, Point = keyValuePair.Value });
-            nodeList.Add(characterNode);
-
-            var dijkstra = new Dijkstra(nodeList, characterNode, (n) =>
-            {
-                return new Edge[0];
+                X = _characterPosition.X,
+                Y = _characterPosition.Y,
+                Keys = new HashSet<char>(),
+                Depth = 0
             });
 
-            var availableStarterPaths = allPossibleRetraces.Where(r => r.From == '@' && r.Doors.Count == 0).ToList();
-
-            var paths = new List<Path>();
-
-            //availableStarterPaths.ForEach(r => paths.Add(new Path
-            //{
-            //    Length = r.Length,
-            //    CollectedKeys = new List<char> { r.To },
-            //    LastPosition = r.To,
-            //    PathCount = 1,
-            //    Depth = 0
-            //}));
-
-            //long highestPathCount = 0;
-            //int bestLength = 5876;
-            //int cancelled = 0;
-            //Path shortestPath = null;
-
-            var threads = new Thread[availableStarterPaths.Count];
-            var best = new int[availableStarterPaths.Count];
-
-            for (int threadIndex = 0; threadIndex < availableStarterPaths.Count; threadIndex++)
+            while (queue.Count > 0)
             {
-                Thread thread = new Thread(new ParameterizedThreadStart(threadNumber =>
-                {
-                    var r = availableStarterPaths[(int)threadNumber];
-                    var bestForPath = RunStarterPath(new List<Path>
-                    {
-                        new Path
-                        {
-                            Length = r.Length,
-                            CollectedKeys = new List<char> { r.To },
-                            LastPosition = r.To,
-                            Depth = 0
-                        }
-                    }, allPossibleRetraces);
-                    best[threadIndex] = bestForPath;
-                    _finishedThreads++;
-                }));
+                var state = queue.Dequeue();
 
-                threads[threadIndex] = thread;
-            }
+                var sortedKeys = string.Empty;
+                foreach (var k in state.Keys.OrderBy(k => k))
+                    sortedKeys += k;
 
-            for (int threadIndex = 0; threadIndex < threads.Length; threadIndex++)
-                threads[threadIndex].Start(threadIndex);
+                var index = state.Y * _size.Width + state.X;
 
-            while (_finishedThreads < availableStarterPaths.Count)
-            { }
+                string key = $"{index}{sortedKeys}";
 
-            //var shortestLength = closedPaths.Where(p => p.CollectedKeys.Count == _keyPositions.Count).Min(p => p.Length);
-
-            //var shortestPath = closedPaths.Where(p => p.CollectedKeys.Count == _keyPositions.Count && p.Length == shortestLength).First();
-
-            //do
-            //{
-            //    DrawGrid(grid);
-            //    DrawPath(grid, shortestPath);
-            //    Thread.Sleep(40);
-            //    //Console.ReadKey(true);
-            //    shortestPath = shortestPath.Previous;
-            //} while (shortestPath.Previous != null);
-
-            return best.Min().ToString();
-        }
-
-        public static int RunStarterPath(List<Path> paths, List<RetraceData> allPossibleRetraces)
-        {
-            Func<char, List<char>, bool> needsKey = new Func<char, List<char>, bool>((to, collectedKeys) =>
-            {
-                return !collectedKeys.Contains(to);
-            });
-
-            Func<RetraceData, List<char>, bool> hasKeyForTheDoors = new Func<RetraceData, List<char>, bool>((retrace, collectedKeys) =>
-            {
-                foreach (var door in retrace.Doors)
-                {
-                    if (!collectedKeys.Contains(door))
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            });
-
-            while (paths.Count > 0)
-            {
-                // remember, we need to pick the shortest path all the time to work on
-                //var minPathLength = ;
-                var currentPath = paths.OrderByDescending(p => p.Depth).ThenBy(p => p.Length).First();
-
-                paths.Remove(currentPath);
-
-                if (currentPath.Length > _bestLength)
-                {
-                    //cancelled++;
-
-                    //if (cancelled % 100_000 == 0)
-                    //{
-                    //    Console.WriteLine();
-                    //    Console.WriteLine($"Cancelled {cancelled}.");
-                    //}
-
+                if (_seen.Contains(key))
                     continue;
-                }
+                _seen.Add(key);
 
-                //if (currentPath.CollectedKeys.Count == _keyPositions.Count)
-                //{
-                //    allKeysCollected = true;
-                //    shortestPath = currentPath;
-                //    break;
-                //}
-
-                var possibleDestinations = allPossibleRetraces
-                        .Where(r => r.From == currentPath.LastPosition && HasKeyForTheDoors(r, currentPath.CollectedKeys) && NeedsKey(r.To, currentPath.CollectedKeys))
-                        .ToArray();
-
-                if (possibleDestinations.Length == 0)
-                {
-                    if (currentPath.CollectedKeys.Count != _keyPositions.Count)
-                        throw new Exception();
-
-                    Console.Write("$");
-
-                    //if (highestPathCount < currentPath.PathCount)
-                    //{
-                    //    Console.WriteLine();
-                    //    highestPathCount = currentPath.PathCount;
-                    //    Console.WriteLine($"Highest Path Count set to {highestPathCount}");
-                    //}
-
-                    if (_bestLength > currentPath.Length)
-                    {
-                        Console.WriteLine();
-                        _bestLength = currentPath.Length;
-                        Console.WriteLine($"Best Length set to {_bestLength}");
-                    }
-
+                if (_size.Width <= state.X && state.X < 0 && _size.Height <= state.Y && state.Y < 0)
                     continue;
+
+                var c = _map[state.Y][state.X];
+
+                if (c == WALL)
+                    continue;
+
+                if (_doorPositions.ContainsKey(c) && state.Keys.Contains(c.ToString().ToLower()[0]) == false)
+                    continue;
+
+                var newKeys = new HashSet<char>(state.Keys);
+
+                if (_keyPositions.ContainsKey(c))
+                {
+                    if (!newKeys.Contains(c))
+                        newKeys.Add(c);
+                    if (newKeys.Count == _keyPositions.Count)
+                        return state.Depth.ToString();
                 }
 
-                //var minPathLength = possibleDestinations.Min(d => d.Retrace.Path.Length);
-
-                var destinations = possibleDestinations.OrderBy(d => d.Length).ToList();
-
-                foreach (var possibleDestination in destinations)
-                {
-                    var newCollectedKeys = new List<char>(currentPath.CollectedKeys)
-                        {
-                            possibleDestination.To
-                        };
-
-                    var newLength = currentPath.Length + possibleDestination.Length;
-
-                    paths.Add(new Path
+                for (int direction = 0; direction < 4; direction++)
+                    queue.Enqueue(new State
                     {
-                        Depth = currentPath.Depth + 1,
-                        Length = newLength,
-                        CollectedKeys = newCollectedKeys,
-                        LastPosition = possibleDestination.To
-                        //PathCount = currentPath.PathCount * destinations.Count
+                        X = state.X + _dirX[direction],
+                        Y = state.Y + _dirY[direction],
+                        Keys = newKeys,
+                        Depth = state.Depth + 1
                     });
-                }
             }
 
-            return _bestLength;
+            return "FAILED";
         }
-
-
-        public class Path
-        {
-            public int Depth { get; set; }
-            // public Retrace Retrace { get; set; }
-            // public Path Previous { get; set; }
-            public char LastPosition { get; set; }
-            public int Length { get; set; }
-            public List<char> CollectedKeys { get; set; }
-            //public long PathCount { get; set; }
-        }
-#endif
-
-
-
     }
 }

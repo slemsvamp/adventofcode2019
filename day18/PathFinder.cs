@@ -8,14 +8,13 @@ namespace day18
     public interface IGrid
     {
         int GetMaximumHeapSize();
-        PathfinderNode[] GetNeighbours(Point point, bool allowDiagonals);
-        PathfinderNode GetNodeFromWorldPoint(Point point);
+        PathfinderNode[] GetNeighbours(Point point, HashSet<char> keys);
+        PathfinderNode GetNodeFromWorldPoint(Point point, HashSet<char> keys);
     }
 
     public class Retrace
     {
         public Point[] Path { get; set; }
-        public List<char> Doors { get; set; }
     }
 
     public class Pathfinder
@@ -31,9 +30,9 @@ namespace day18
             _diagonalMovementCost = diagonalMovementCost;
         }
 
-        public Retrace FindPath(Point start, Point goal, IGrid grid, bool allowDiagonalMovement = false)
+        public Retrace FindPath(Point start, Point goal, IGrid grid, HashSet<char> keys, bool allowDiagonalMovement = false)
         {
-            PathfinderNode startNode = grid.GetNodeFromWorldPoint(start);
+            PathfinderNode startNode = grid.GetNodeFromWorldPoint(start, keys);
             int maxHeapSize = grid.GetMaximumHeapSize();
             var open = new Heap<PathfinderNode>(maxHeapSize);
             HashSet<int> closed = new HashSet<int>();
@@ -47,33 +46,24 @@ namespace day18
                 if (currentNode.Position == goal)
                 {
                     var retrace = new List<Point>();
-                    var doors = new List<char>();
-
                     var retraceNode = currentNode;
                     while (retraceNode != startNode)
                     {
                         retrace.Add(retraceNode.Position);
-                        if (retraceNode.Door != '\0')
-                        {
-                            doors.Add(retraceNode.Door.ToString().ToLower()[0]);
-                        }
                         retraceNode = retraceNode.Parent;
                     }
                     retrace.Reverse();
 
                     return new Retrace
                     {
-                        Path = retrace.ToArray(),
-                        Doors = doors
+                        Path = retrace.ToArray()
                     };
                 }
 
-                foreach (PathfinderNode neighbour in grid.GetNeighbours(currentNode.Position, allowDiagonalMovement))
+                foreach (PathfinderNode neighbour in grid.GetNeighbours(currentNode.Position, keys))
                 {
                     if (neighbour.TerrainCost == int.MaxValue || closed.Contains(neighbour.GetHashCode()))
-                    {
                         continue;
-                    }
 
                     int newMovementCostToNeighbour = currentNode.TravelCost + GetDistance(currentNode.Position, neighbour.Position);
                     if (newMovementCostToNeighbour < neighbour.TravelCost || !open.Contains(neighbour))
@@ -83,13 +73,9 @@ namespace day18
                         neighbour.SetParent(currentNode);
 
                         if (!open.Contains(neighbour))
-                        {
                             open.Add(neighbour);
-                        }
                         else
-                        {
                             open.UpdateItem(neighbour);
-                        }
                     }
                 }
             }
@@ -152,9 +138,8 @@ namespace day18
         }
 
         // -- Constructor --
-        public PathfinderNode(Point position, char door, int terrainCost = 0)
+        public PathfinderNode(Point position, int terrainCost = 0)
         {
-            _door = door;
             _position = position;
             _terrainCost = terrainCost;
         }

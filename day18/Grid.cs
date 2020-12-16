@@ -25,70 +25,76 @@ namespace day18
                     Map[x + y * size.Width] = map[y][x];
         }
 
-        public List<RetraceData> GenerateRetraces(Dictionary<char, Point> keyPositions, Point characterPosition)
-        {
-            var pathfinder = new Pathfinder();
-            var retraces = new List<RetraceData>();
+        //public List<RetraceData> GenerateRetraces(Dictionary<char, Point> keyPositions, Dictionary<char, Point> doorPositions, Point characterPosition)
+        //{
+        //    var pathfinder = new Pathfinder();
+        //    var retraces = new List<RetraceData>();
 
-            foreach (var endKeyValuePair in keyPositions)
-            {
-                var endKey = endKeyValuePair.Key;
-                var endPosition = endKeyValuePair.Value;
+        //    var allPositions = new Dictionary<char, Point>();
+        //    foreach (var keyValuePair in keyPositions)
+        //        allPositions.Add(keyValuePair.Key, keyValuePair.Value);
+        //    foreach (var keyValuePair in doorPositions)
+        //        allPositions.Add(keyValuePair.Key, keyValuePair.Value);
 
-                var retracePath = pathfinder.FindPath(characterPosition, endPosition, this);
+        //    foreach (var endKeyValuePair in allPositions)
+        //    {
+        //        var endKey = endKeyValuePair.Key;
+        //        var endPosition = endKeyValuePair.Value;
 
-                retraces.Add(new RetraceData
-                {
-                    From = '@',
-                    To = endKey,
-                    Doors = retracePath.Doors,
-                    Length = retracePath.Path.Length
-                });
-            }
+        //        var retracePath = pathfinder.FindPath(characterPosition, endPosition, this, );
 
-            foreach (var startKeyValuePair in keyPositions)
-            {
-                var startKey = startKeyValuePair.Key;
-                var startPosition = startKeyValuePair.Value;
+        //        retraces.Add(new RetraceData
+        //        {
+        //            From = '@',
+        //            To = endKey,
+        //            Doors = retracePath.Doors,
+        //            Length = retracePath.Path.Length
+        //        });
+        //    }
 
-                foreach (var endKeyValuePair in keyPositions)
-                {
-                    var endKey = endKeyValuePair.Key;
-                    var endPosition = endKeyValuePair.Value;
+        //    foreach (var startKeyValuePair in allPositions)
+        //    {
+        //        var startKey = startKeyValuePair.Key;
+        //        var startPosition = startKeyValuePair.Value;
 
-                    var pair = retraces.Where(r => r.From == endKey && r.To == startKey).SingleOrDefault();
+        //        foreach (var endKeyValuePair in allPositions)
+        //        {
+        //            var endKey = endKeyValuePair.Key;
+        //            var endPosition = endKeyValuePair.Value;
 
-                    if (startKey == endKey)
-                    {
-                        continue;
-                    }
-                    else if (pair != null)
-                    {
-                        retraces.Add(new RetraceData
-                        {
-                            From = startKey,
-                            To = endKey,
-                            Doors = pair.Doors,
-                            Length = pair.Length
-                        });
+        //            var pair = retraces.Where(r => r.From == endKey && r.To == startKey).SingleOrDefault();
 
-                        continue;
-                    }
+        //            if (startKey == endKey)
+        //            {
+        //                continue;
+        //            }
+        //            else if (pair != null)
+        //            {
+        //                retraces.Add(new RetraceData
+        //                {
+        //                    From = startKey,
+        //                    To = endKey,
+        //                    Doors = pair.Doors,
+        //                    Length = pair.Length
+        //                });
 
-                    var retracePath = pathfinder.FindPath(startPosition, endPosition, this);
+        //                continue;
+        //            }
 
-                    retraces.Add(new RetraceData
-                    {
-                        From = startKey,
-                        To = endKey,
-                        Doors = retracePath.Doors,
-                        Length = retracePath.Path.Length
-                    });
-                }
-            }
+        //            var retracePath = pathfinder.FindPath(startPosition, endPosition, this);
 
-            return retraces;
-        }
+        //            retraces.Add(new RetraceData
+        //            {
+        //                From = startKey,
+        //                To = endKey,
+        //                Doors = retracePath.Doors,
+        //                Length = retracePath.Path.Length
+        //            });
+        //        }
+        //    }
+
+        //    return retraces;
+        //}
 
         public void SetPoint(Point point, char data)
         {
@@ -100,66 +106,48 @@ namespace day18
             return _size.Width * _size.Height;
         }
 
-        public PathfinderNode[] GetNeighbours(Point point, bool allowDiagonals)
+        public PathfinderNode[] GetNeighbours(Point point, HashSet<char> keys)
         {
             if (point.X > 0 && point.X < _size.Width && point.Y > 0 && point.Y < _size.Height)
             {
-                int wallCost = int.MaxValue;
-
+                var isDoor = new Func<char, bool>(c => c >= 'A' && c <= 'Z');
                 Point up = point.Add(0, -1), down = point.Add(0, 1), left = point.Add(-1, 0), right = point.Add(1, 0);
-                int upCost = wallCost, downCost = wallCost, leftCost = wallCost, rightCost = wallCost;
 
-                var upData = Map[up.Y * _size.Width + up.X];
-                var downData = Map[down.Y * _size.Width + down.X];
-                var leftData = Map[left.Y * _size.Width + left.X];
-                var rightData = Map[right.Y * _size.Width + right.X];
+                var nodes = new List<PathfinderNode>();
 
-                if (upData == '.' || upData != '#')
-                {
-                    upCost = 1;
-                }
+                foreach (var location in new Point[] { up, down, left, right })
+                    nodes.Add(GetNodeFromWorldPoint(location, keys));
 
-                if (downData == '.' || downData != '#')
-                {
-                    downCost = 1;
-                }
-
-                if (leftData == '.' || leftData != '#')
-                {
-                    leftCost = 1;
-                }
-
-                if (rightData == '.' || rightData != '#')
-                {
-                    rightCost = 1;
-                }
-
-                var isDoor = new Func<char, bool>(c => c != '.' && c != '#' && c != '@' && c.ToString().ToUpper() == c.ToString());
-
-                return new PathfinderNode[4]
-                {
-                    new PathfinderNode(up, isDoor(upData) ? upData : '\0', upCost),
-                    new PathfinderNode(down, isDoor(downData) ? downData : '\0', downCost),
-                    new PathfinderNode(left, isDoor(leftData) ? leftData : '\0', leftCost),
-                    new PathfinderNode(right, isDoor(rightData) ? rightData : '\0', rightCost)
-                };
+                return nodes.ToArray();
             }
 
             return new PathfinderNode[4]
             {
-                new PathfinderNode(point.Add(0, -1), '\0', int.MaxValue),
-                new PathfinderNode(point.Add(0, 1), '\0', int.MaxValue),
-                new PathfinderNode(point.Add(-1, 0), '\0', int.MaxValue),
-                new PathfinderNode(point.Add(1, 0), '\0', int.MaxValue)
+                new PathfinderNode(point.Add(0, -1), int.MaxValue),
+                new PathfinderNode(point.Add(0, 1), int.MaxValue),
+                new PathfinderNode(point.Add(-1, 0), int.MaxValue),
+                new PathfinderNode(point.Add(1, 0), int.MaxValue)
             };
         }
 
-        public PathfinderNode GetNodeFromWorldPoint(Point point)
-        {
-            var pointData = Map[point.Y * _size.Width + point.Y];
-            var isDoor = pointData != '.' && pointData != '#' && pointData.ToString().ToUpper() == pointData.ToString();
+        private bool IsDoor(char terrain)
+            => terrain >= 'A' && terrain <= 'Z';
 
-            return new PathfinderNode(point, isDoor ? pointData : '\0', pointData);
+        private bool IsKey(char terrain)
+            => terrain >= 'a' && terrain <= 'z';
+
+        public PathfinderNode GetNodeFromWorldPoint(Point point, HashSet<char> keys)
+        {
+            var terrain = Map[point.Y * _size.Width + point.X];
+            var cost = int.MaxValue; /* wall or locked door is default */
+            if (terrain == '.' /* open space */ || terrain == '@' /* character start */ ||
+                (IsDoor(terrain) && keys.Contains(terrain.ToString().ToLower()[0])) /* passable door */ ||
+                IsKey(terrain))
+            {
+                cost = 1;
+            }
+
+            return new PathfinderNode(point, cost);
         }
 
         public void Draw()

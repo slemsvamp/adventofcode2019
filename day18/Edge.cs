@@ -17,6 +17,13 @@ namespace day18
             Cost = retraceData.Length;
         }
 
+        public char OtherNodeName(char node)
+        {
+            if (Name.IndexOf(node) == 0)
+                return Name[1];
+            return Name[0];
+        }
+
         public static string EdgeName(Node a, Node b)
         {
             if (a.Name > b.Name)

@@ -5,7 +5,11 @@ namespace day18
     class Program
     {
         public static readonly int ScreenWidth = 83;
+#if DEBUG
         public static readonly int ScreenHeight = 50;
+#else
+        public static readonly int ScreenHeight = 90;
+#endif
 
         static void Main(string[] args)
         {
@@ -14,13 +18,13 @@ namespace day18
             Console.SetBufferSize(ScreenWidth, ScreenHeight);
 #endif
 
-            Console.WriteLine("---- Part 01 ----");
-            var part1 = FirstStar.Run();
-            Console.WriteLine($"Result: {part1}");
-            Console.WriteLine("-----------------");
+            //Console.WriteLine("---- Part 01 ----");
+            //var part1 = FirstStar.Run();
+            //Console.WriteLine($"Result: {part1}");
+            //Console.WriteLine("-----------------");
 
             
-            Console.WriteLine("---- Part 02 ----");
+            //Console.WriteLine("---- Part 02 ----");
             var part2 = SecondStar.Run();
             Console.WriteLine($"Result: {part2}");
 
@@ -33,7 +37,7 @@ namespace day18
 
             if (key.Key == ConsoleKey.D1)
             {
-                WindowsClipboard.SetText(part1);
+                //WindowsClipboard.SetText(part1);
             }
             else if (key.Key == ConsoleKey.D2)
             {
