@@ -11,37 +11,7 @@ namespace day18
 {
     public class SecondStar
     {
-        public class Character
-        {
-            public Queue<State> Queue;
-            public bool Done;
-            public int Depth;
-            public int Quadrant;
-            public HashSet<char> Stall;
 
-            public Character()
-            {
-                Queue = new Queue<State>();
-                Done = false;
-                Depth = 0;
-                Quadrant = -1;
-                Stall = new HashSet<char>();
-            }
-        }
-
-        public class Robot
-        {
-            public int Quadrant;
-            public Point Position;
-            public int Distance;
-
-            public Robot(int quadrant, Point position)
-            {
-                Quadrant = quadrant;
-                Position = position;
-                Distance = 0;
-            }
-        }
 
         private static Dictionary<char, Point> _keyPositions { get; set; }
         private static Dictionary<char, Point> _doorPositions { get; set; }
