@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
 
 namespace day18
 {
@@ -23,7 +25,6 @@ namespace day18
             //Console.WriteLine($"Result: {part1}");
             //Console.WriteLine("-----------------");
 
-            
             //Console.WriteLine("---- Part 02 ----");
             var part2 = SecondStar.Run();
             Console.WriteLine($"Result: {part2}");

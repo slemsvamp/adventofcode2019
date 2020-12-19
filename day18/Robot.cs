@@ -7,15 +7,13 @@ namespace day18
 {
     public struct Robot
     {
-        public int Quadrant;
         public Point Position;
         public int Distance;
 
-        public Robot(int quadrant, Point position)
+        public Robot(Point position, int distance)
         {
-            Quadrant = quadrant;
             Position = position;
-            Distance = 0;
+            Distance = distance;
         }
     }
 }

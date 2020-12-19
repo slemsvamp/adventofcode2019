@@ -185,6 +185,5 @@ namespace day18
                 Console.ForegroundColor = ConsoleColor.White;
             }
         }
-
     }
 }

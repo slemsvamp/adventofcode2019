@@ -24,82 +24,82 @@ namespace day18
 
         public static string Run()
         {
-            _map = InputParser.Parse("input.txt");
-            _size = new Size(_map[0].Length, _map.Length);
+            //_map = InputParser.Parse("input.txt");
+            //_size = new Size(_map[0].Length, _map.Length);
 
-            _keyPositions = new Dictionary<char, Point>();
-            _doorPositions = new Dictionary<char, Point>();
+            //_keyPositions = new Dictionary<char, Point>();
+            //_doorPositions = new Dictionary<char, Point>();
 
-            for (int y = 0; y < _size.Height; y++)
-                for (int x = 0; x < _size.Width; x++)
-                {
-                    var point = new Point(x, y);
-                    var character = _map[y][x];
-                    if (character == '@')
-                        _characterPosition = point;
-                    else if (character >= 'a' && character <= 'z')
-                        _keyPositions.Add(character, point);
-                    else if (character >= 'A' && character <= 'Z')
-                        _doorPositions.Add(character, point);
-                }
+            //for (int y = 0; y < _size.Height; y++)
+            //    for (int x = 0; x < _size.Width; x++)
+            //    {
+            //        var point = new Point(x, y);
+            //        var character = _map[y][x];
+            //        if (character == '@')
+            //            _characterPosition = point;
+            //        else if (character >= 'a' && character <= 'z')
+            //            _keyPositions.Add(character, point);
+            //        else if (character >= 'A' && character <= 'Z')
+            //            _doorPositions.Add(character, point);
+            //    }
 
-            _seen = new HashSet<string>();
+            //_seen = new HashSet<string>();
 
-            var queue = new Queue<State>();
-            queue.Enqueue(new State
-            {
-                X = _characterPosition.X,
-                Y = _characterPosition.Y,
-                Keys = new HashSet<char>(),
-                Depth = 0
-            });
+            //var queue = new Queue<State>();
+            //queue.Enqueue(new State
+            //{
+            //    X = _characterPosition.X,
+            //    Y = _characterPosition.Y,
+            //    Keys = new HashSet<char>(),
+            //    Depth = 0
+            //});
 
-            while (queue.Count > 0)
-            {
-                var state = queue.Dequeue();
+            //while (queue.Count > 0)
+            //{
+            //    var state = queue.Dequeue();
 
-                var sortedKeys = string.Empty;
-                foreach (var k in state.Keys.OrderBy(k => k))
-                    sortedKeys += k;
+            //    var sortedKeys = string.Empty;
+            //    foreach (var k in state.Keys.OrderBy(k => k))
+            //        sortedKeys += k;
 
-                var index = state.Y * _size.Width + state.X;
+            //    var index = state.Y * _size.Width + state.X;
 
-                string key = $"{index}{sortedKeys}";
+            //    string key = $"{index}{sortedKeys}";
 
-                if (_seen.Contains(key))
-                    continue;
-                _seen.Add(key);
+            //    if (_seen.Contains(key))
+            //        continue;
+            //    _seen.Add(key);
 
-                if (_size.Width <= state.X && state.X < 0 && _size.Height <= state.Y && state.Y < 0)
-                    continue;
+            //    if (_size.Width <= state.X && state.X < 0 && _size.Height <= state.Y && state.Y < 0)
+            //        continue;
 
-                var c = _map[state.Y][state.X];
+            //    var c = _map[state.Y][state.X];
 
-                if (c == WALL)
-                    continue;
+            //    if (c == WALL)
+            //        continue;
 
-                if (_doorPositions.ContainsKey(c) && state.Keys.Contains(c.ToString().ToLower()[0]) == false)
-                    continue;
+            //    if (_doorPositions.ContainsKey(c) && state.Keys.Contains(c.ToString().ToLower()[0]) == false)
+            //        continue;
 
-                var newKeys = new HashSet<char>(state.Keys);
+            //    var newKeys = new HashSet<char>(state.Keys);
 
-                if (_keyPositions.ContainsKey(c))
-                {
-                    if (!newKeys.Contains(c))
-                        newKeys.Add(c);
-                    if (newKeys.Count == _keyPositions.Count)
-                        return state.Depth.ToString();
-                }
+            //    if (_keyPositions.ContainsKey(c))
+            //    {
+            //        if (!newKeys.Contains(c))
+            //            newKeys.Add(c);
+            //        if (newKeys.Count == _keyPositions.Count)
+            //            return state.Depth.ToString();
+            //    }
 
-                for (int direction = 0; direction < 4; direction++)
-                    queue.Enqueue(new State
-                    {
-                        X = state.X + _dirX[direction],
-                        Y = state.Y + _dirY[direction],
-                        Keys = newKeys,
-                        Depth = state.Depth + 1
-                    });
-            }
+            //    for (int direction = 0; direction < 4; direction++)
+            //        queue.Enqueue(new State
+            //        {
+            //            X = state.X + _dirX[direction],
+            //            Y = state.Y + _dirY[direction],
+            //            Keys = newKeys,
+            //            Depth = state.Depth + 1
+            //        });
+            //}
 
             return "FAILED";
         }

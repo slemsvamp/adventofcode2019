@@ -11,59 +11,124 @@ namespace day18
     {
         public HashSet<char> Keys;
         public Robot[] Robots;
+        public int Distance;
 
-        public State FromHash(long hash)
+        //public void FromHash(string hash)
+        //{
+        //    var bytes = Convert.FromBase64String(hash);
+
+        //    long hashA = 0, hashB = 0;
+
+        //    hashA = BitConverter.ToInt64(bytes.Take(8).ToArray());
+        //    hashB = BitConverter.ToInt64(bytes.Skip(8).Take(8).ToArray());
+
+        //    Robots = new Robot[]
+        //    {
+        //            new Robot
+        //            {
+        //                Position = new Point
+        //                {
+        //                    X = (int)(hashA % 128),
+        //                    Y = (int)(hashA / Math.Pow(2, 7) % 128)
+        //                },
+        //                Distance = (int)(hashA / Math.Pow(2, 14) % 4096)
+        //            },
+        //            new Robot
+        //            {
+        //                Position = new Point
+        //                {
+        //                    X = (int)(hashA / Math.Pow(2, 26) % 128),
+        //                    Y = (int)(hashA / Math.Pow(2, 33) % 128)
+        //                },
+        //                Distance = (int)(hashA / Math.Pow(2, 40) % 4096)
+        //            },
+        //            new Robot
+        //            {
+        //                Position = new Point
+        //                {
+        //                    X = (int)(hashA / Math.Pow(2, 52) % 128),
+        //                    Y = (int)(hashB % 128)
+        //                },
+        //                Distance = (int)(hashB / Math.Pow(2, 7) % 4096)
+        //            },
+        //            new Robot
+        //            {
+        //                Position = new Point
+        //                {
+        //                    X = (int)(hashB / Math.Pow(2, 19) % 128),
+        //                    Y = (int)(hashB / Math.Pow(2, 26) % 128)
+        //                },
+        //                Distance = (int)(hashB / Math.Pow(2, 33) % 4096)
+        //            }
+        //    };
+
+        //    Keys = new HashSet<char>(bytes.Skip(16).Select(k => (char)k));
+        //}
+
+        public string ToHash()
         {
-            var state = new State
+            long hashA = 0;
+
+            if (Robots != null)
             {
-                Robots = new Robot[]
-                {
-                    new Robot
-                    {
-                        Position = new Point
-                        {
-                            X = 0,
-                            Y = 0
-                        }
-                    }
-                },
-                Keys = new HashSet<char>()
-            };
+                hashA += Robots[0].Position.X;
+                hashA += (long)Math.Pow(2, 7) * Robots[0].Position.Y;
 
-            return state;
-        }
+                hashA += (long)Math.Pow(2, 14) * Robots[1].Position.X;
+                hashA += (long)Math.Pow(2, 21) * Robots[1].Position.Y;
 
-        public long ToHash()
-        {
-            long hash = Robots[0].Position.X;
-            hash += 7 ^ 2 * Robots[0].Position.Y;
-            hash += 14 ^ 2 * Robots[0].Distance;
+                hashA += (long)Math.Pow(2, 28) * Robots[2].Position.X;
+                hashA += (long)Math.Pow(2, 35) * Robots[2].Position.Y;
 
-            hash += 26 ^ 2 * Robots[1].Position.X;
-            hash += 33 ^ 2 * Robots[1].Position.Y;
-            hash += 40 ^ 2 * Robots[1].Distance;
-
-            hash += 52 ^ 2 * Robots[2].Position.X;
-            
-            long hash2 = Robots[2].Position.Y;
-            hash2 += 7 ^ 2 * Robots[2].Distance;
-
-            hash2 += 19 ^ 2 * Robots[3].Position.X;
-            hash2 += 26 ^ 2 * Robots[3].Position.Y;
-            hash2 += 33 ^ 2 * Robots[3].Distance;
-
-            var keys = Keys.OrderBy(k => k).ToArray();
-
-            for (int index = 0; index < keys.Length; index++)
-            {
-                int bit = keys[index] - 'a';
-                hash += 40 ^ 2 * bit;
+                hashA += (long)Math.Pow(2, 42) * Robots[3].Position.X;
+                hashA += (long)Math.Pow(2, 49) * Robots[3].Position.Y;
             }
 
+            var keys = new byte[0];
 
+            if (Keys != null)
+                keys = Keys.OrderBy(k => k).Select(k => (byte)k).ToArray();
 
+            var bytes = BitConverter.GetBytes(hashA).Concat(keys).ToArray();
 
-            return hash;
+            return Convert.ToBase64String(bytes);
+        }
+
+        public string ToOldHash()
+        {
+            long hashA = 0;
+            long hashB = 0;
+
+            if (Robots != null)
+            {
+                hashA += Robots[0].Position.X;
+                hashA += (long)Math.Pow(2, 7) * Robots[0].Position.Y;
+                hashA += (long)Math.Pow(2, 14) * Robots[0].Distance;
+
+                hashA += (long)Math.Pow(2, 26) * Robots[1].Position.X;
+                hashA += (long)Math.Pow(2, 33) * Robots[1].Position.Y;
+                hashA += (long)Math.Pow(2, 40) * Robots[1].Distance;
+
+                hashA += (long)Math.Pow(2, 52) * Robots[2].Position.X;
+                hashB += Robots[2].Position.Y;
+                hashB += (long)Math.Pow(2, 7) * Robots[2].Distance;
+
+                hashB += (long)Math.Pow(2, 19) * Robots[3].Position.X;
+                hashB += (long)Math.Pow(2, 26) * Robots[3].Position.Y;
+                hashB += (long)Math.Pow(2, 33) * Robots[3].Distance;
+            }
+
+            var keys = new byte[0];
+
+            if (Keys != null)
+                keys = Keys.OrderBy(k => k).Select(k => (byte)k).ToArray();
+
+            var bytesA = BitConverter.GetBytes(hashA);
+            var bytesB = BitConverter.GetBytes(hashB);
+
+            var bytes = bytesA.Concat(bytesB).Concat(keys).ToArray();
+
+            return Convert.ToBase64String(bytes);
         }
     }
 }
