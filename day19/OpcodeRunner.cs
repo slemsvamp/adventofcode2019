@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace day19
 {
@@ -90,70 +91,93 @@ namespace day19
                 var parameterModes = ParameterModes(intCode);
                 var instruction = intCode > 9 ? long.Parse(intCode.ToString().Substring(intCode.ToString().Length - 2)) : intCode;
 
+                Debug.Write($"[{_playhead}]: ");
+
                 switch (instruction)
                 {
                     case 1:
                     {
+                        Debug.Write($"ADD => ");
                         var parameters = ReadNextParameters(parameterModes, "RRW", 3);
                         Addition(parameters);
+                        Debug.Write($"{parameters[0]}+{parameters[1]}={_opcodes[parameters[2]]}");
                     }
                     break;
                     case 2:
                     {
+                        Debug.Write($"MUL => ");
                         var parameters = ReadNextParameters(parameterModes, "RRW", 3);
                         Multiplication(parameters);
+                        Debug.Write($"{parameters[0]}*{parameters[1]}={_opcodes[parameters[2]]}");
                     }
                     break;
                     case 3:
                     {
+                        Debug.Write($"INP => ");
                         var parameters = ReadNextParameters(parameterModes, "W", 1);
                         Input(parameters);
+                        Debug.Write($"{_opcodes[parameters[0]]}(@{parameters[0]})");
                     }
                     break;
                     case 4:
                     {
+                        Debug.Write($"OUT => ");
                         var parameters = ReadNextParameters(parameterModes, "R", 1);
                         Output(parameters);
+                        Debug.Write($"{_output}");
                     }
                     return _output;
                     case 5:
                     {
+                        Debug.Write($"JMP => ");
                         var parameters = ReadNextParameters(parameterModes, "RR", 2);
                         JumpIfTrue(parameters);
+                        Debug.Write($"{parameters[0]}=TRUE? JMP={parameters[1]}");
                     }
                     break;
                     case 6:
                     {
+                        Debug.Write($"JPF => ");
                         var parameters = ReadNextParameters(parameterModes, "RR", 2);
                         JumpIfFalse(parameters);
+                        Debug.Write($"{parameters[0]}=FALSE? JMP={parameters[1]}");
                     }
                     break;
                     case 7:
                     {
+                        Debug.Write($"LTN => ");
                         var parameters = ReadNextParameters(parameterModes, "RRW", 3);
                         LessThan(parameters);
+                        Debug.Write($"{parameters[0]}<{parameters[1]}={_opcodes[parameters[2]]}");
                     }
                     break;
                     case 8:
                     {
+                        Debug.Write($"GTN => ");
                         var parameters = ReadNextParameters(parameterModes, "RRW", 3);
                         Equal(parameters);
+                        Debug.Write($"{parameters[0]}>{parameters[1]}={_opcodes[parameters[2]]}");
                     }
                     break;
                     case 9:
                     {
+                        Debug.Write($"SRB => ");
                         var parameters = ReadNextParameters(parameterModes, "R", 1);
                         SetRelativeBase(parameters);
+                        Debug.Write(_relativeBase);
                     }
                     break;
                     case 99:
                     {
+                        Debug.WriteLine($"HLT!");
                         Halted = true;
                         return _output;
                     }
                     default:
-                    throw new Exception($"Opcode error: {intCode}");
+                        throw new Exception($"Opcode error: {intCode}");
                 }
+
+                Debug.WriteLine("");
             }
 
             throw new System.Exception("Program finished unexpectedly.");
@@ -187,7 +211,7 @@ namespace day19
                         }
                         break;
                         default:
-                        throw new Exception("Unknown ParameterMode.");
+                            throw new Exception("Unknown ParameterMode.");
                     }
                 }
                 else if (io[parameterIndex] == 'W')
@@ -209,7 +233,7 @@ namespace day19
                         }
                         break;
                         default:
-                        throw new Exception("Unknown ParameterMode.");
+                            throw new Exception("Unknown ParameterMode.");
                     }
                 }
             }
